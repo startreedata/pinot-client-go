@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -23,12 +24,7 @@ type jsonAsyncHTTPClientTransport struct {
 }
 
 func (t jsonAsyncHTTPClientTransport) execute(brokerAddress string, query *Request) (*BrokerResponse, error) {
-	var url string
-	if query.queryFormat == "sql" {
-		url = fmt.Sprintf("http://%s/query/sql", brokerAddress)
-	} else {
-		url = fmt.Sprintf("http://%s/query", brokerAddress)
-	}
+	url := fmt.Sprintf(getQueryTemplate(query.queryFormat, brokerAddress), brokerAddress)
 	requestJSON := map[string]string{}
 	requestJSON[query.queryFormat] = query.query
 	if query.queryFormat == "sql" {
@@ -60,6 +56,19 @@ func (t jsonAsyncHTTPClientTransport) execute(brokerAddress string, query *Reque
 		return &brokerResponse, nil
 	}
 	return nil, fmt.Errorf("Caught http exception when querying Pinot: %v", resp.Status)
+}
+
+func getQueryTemplate(queryFormat string, brokerAddress string) string {
+	if queryFormat == "sql" {
+		if strings.HasPrefix(brokerAddress, "http://") || strings.HasPrefix(brokerAddress, "https://") {
+			return "%s/query/sql"
+		}
+		return "http://%s/query/sql"
+	}
+	if strings.HasPrefix(brokerAddress, "http://") || strings.HasPrefix(brokerAddress, "https://") {
+		return "%s/query"
+	}
+	return "http://%s/query"
 }
 
 func createHTTPRequest(url string, jsonValue []byte, extraHeader map[string]string) (*http.Request, error) {

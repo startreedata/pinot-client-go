@@ -16,6 +16,8 @@ func TestSimpleBrokerSelector(t *testing.T) {
 			"broker4",
 		},
 	}
+	err := s.init()
+	assert.Nil(t, err)
 	for i := 0; i < 10; i++ {
 		brokerName, err := s.selectBroker("")
 		assert.Equal(t, "broker", brokerName[0:6])
