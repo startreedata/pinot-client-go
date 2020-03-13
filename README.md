@@ -1,7 +1,7 @@
 Pinot Client GO
 ===============
 [![GoDoc](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white)](https://pkg.go.dev/github.com/fx19880617/pinot-client-go)
-[![Build Status](https://api.travis-ci.org/fx19880617/pinot-client-go.svg?branch=master)](https://travis-ci.org/fx19880617/pinot-client-go)
+[![Build Status](https://travis-ci.org/fx19880617/pinot-client-go.svg?branch=master)](https://travis-ci.org/fx19880617/pinot-client-go)
 [![Coverage Status](https://coveralls.io/repos/github/fx19880617/pinot-client-go/badge.svg?branch=master)](https://coveralls.io/github/fx19880617/pinot-client-go?branch=master)
 
 Applications can use this golang client library to query Apache Pinot.

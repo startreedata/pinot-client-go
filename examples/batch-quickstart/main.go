@@ -19,7 +19,7 @@ func main() {
 		"select * from baseballStats limit 10",
 		"select count(*) as cnt from baseballStats limit 1",
 		"select count(*) as cnt, sum(homeRuns) as sum_homeRuns from baseballStats limit 1",
-		"select count(*) as cnt, sum(homeRuns) as sum_homeRuns from baseballStats group by teamID limit 10",
+		"select teamID, count(*) as cnt, sum(homeRuns) as sum_homeRuns from baseballStats group by teamID limit 10",
 		"select max(league) from baseballStats limit 10",
 	}
 

@@ -92,17 +92,17 @@ func (r ResultTable) GetString(rowIndex int, columnIndex int) string {
 
 // GetInt returns a ResultTable int entry given row index and column index
 func (r ResultTable) GetInt(rowIndex int, columnIndex int) int {
-	return (r.Rows[rowIndex][columnIndex]).(int)
+	return int((r.Rows[rowIndex][columnIndex]).(float64))
 }
 
 // GetLong returns a ResultTable long entry given row index and column index
 func (r ResultTable) GetLong(rowIndex int, columnIndex int) int64 {
-	return (r.Rows[rowIndex][columnIndex]).(int64)
+	return int64((r.Rows[rowIndex][columnIndex]).(float64))
 }
 
 // GetFloat returns a ResultTable float entry given row index and column index
 func (r ResultTable) GetFloat(rowIndex int, columnIndex int) float32 {
-	return (r.Rows[rowIndex][columnIndex]).(float32)
+	return float32((r.Rows[rowIndex][columnIndex]).(float64))
 }
 
 // GetDouble returns a ResultTable double entry given row index and column index
