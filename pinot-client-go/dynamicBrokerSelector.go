@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	zk "github.com/samuel/go-zookeeper/zk"
@@ -19,11 +20,17 @@ const (
 	realtimeSuffix         = "_REALTIME"
 )
 
+type ReadZNode func(path string) ([]byte, error)
+
 type dynamicBrokerSelector struct {
-	zkConfig       *ZookeeperConfig
-	zkConn         *zk.Conn
-	tableBrokerMap map[string]([]string)
-	allBrokerList  []string
+	zkConfig               *ZookeeperConfig
+	zkConn                 *zk.Conn
+	externalViewZnodeWatch <-chan zk.Event
+	readZNode              ReadZNode
+	tableBrokerMap         map[string]([]string)
+	allBrokerList          []string
+	rwMux                  sync.RWMutex
+	externalViewZkPath     string
 }
 
 type externalView struct {
@@ -40,50 +47,62 @@ func (s *dynamicBrokerSelector) init() error {
 		log.Errorf("Failed to connect to zookeeper: %v\n", s.zkConfig.ZookeeperPath)
 		return err
 	}
-
-	node, stat, znodeWatch, err := s.zkConn.GetW(s.zkConfig.PathPrefix + "/" + brokerExternalViewPath)
-	if err != nil {
-		log.Errorf("Failed to set a watcher on zk, ExternalView: %v\n", s.zkConfig.ZookeeperPath)
-		log.Errorf("Failed to set a watcher on zk, Error: %v\n", err)
-		return err
-	}
-	log.Debugf("znode status for brokerExternalViewPath: %+s %+v\n", node, stat)
-	if err = s.refreshExternalView(); err != nil {
-		log.Errorf("Failed to refresh ExternalView: %v\n", err)
-		return err
-	}
-	go func() {
-		for {
-			select {
-			case ev := <-znodeWatch:
-				if ev.Err != nil {
-					log.Error("GetW watcher error", ev.Err)
-				} else if ev.Type == zk.EventNodeDataChanged {
-					s.refreshExternalView()
-					if err != nil {
-						log.Errorf("Failed to refresh ExternalView: %v\n", err)
-					}
-				}
-				break
-			}
-
-			time.Sleep(100 * time.Millisecond)
+	s.readZNode = func(path string) ([]byte, error) {
+		if s.zkConn == nil {
+			return nil, fmt.Errorf("Zk Connection hasn't been initailized.")
 		}
-	}()
+		node, _, err := s.zkConn.Get(s.externalViewZkPath)
+		if err != nil {
+			log.Errorf("Failed to read zk: %s, ExternalView path: %s\n", s.zkConfig.ZookeeperPath, s.externalViewZkPath)
+			return nil, err
+		}
+		return node, nil
+	}
+	s.externalViewZkPath = s.zkConfig.PathPrefix + "/" + brokerExternalViewPath
+	_, _, s.externalViewZnodeWatch, err = s.zkConn.GetW(s.externalViewZkPath)
+	if err != nil {
+		log.Errorf("Failed to set a watcher on ExternalView path: %s, Error: %v\n", strings.Join(append(s.zkConfig.ZookeeperPath, s.externalViewZkPath), ""), err)
+		return err
+	}
+	if err = s.refreshExternalView(); err != nil {
+		return err
+	}
+	go s.setupWatcher()
 	return nil
 }
 
+func (s *dynamicBrokerSelector) setupWatcher() {
+	for {
+		select {
+		case ev := <-s.externalViewZnodeWatch:
+			if ev.Err != nil {
+				log.Error("GetW watcher error", ev.Err)
+			} else if ev.Type == zk.EventNodeDataChanged {
+				s.refreshExternalView()
+			}
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+}
+
 func (s *dynamicBrokerSelector) refreshExternalView() error {
-	node, _, err := s.zkConn.Get(s.zkConfig.PathPrefix + "/" + brokerExternalViewPath)
+	if s.readZNode == nil {
+		return fmt.Errorf("No method defined to read from a ZNode.")
+	}
+	node, err := s.readZNode(s.externalViewZkPath)
 	if err != nil {
-		log.Errorf("Failed to read zk ExternalView node: %v\n", s.zkConfig.ZookeeperPath)
 		return err
 	}
 	ev, err := getExternalView(node)
 	if err != nil {
 		return err
 	}
-	s.tableBrokerMap, s.allBrokerList = generateNewBrokerMappingExternalView(ev)
+	newTableBrokerMap, newAllBrokerList := generateNewBrokerMappingExternalView(ev)
+	s.rwMux.Lock()
+	s.tableBrokerMap = newTableBrokerMap
+	s.allBrokerList = newAllBrokerList
+	s.rwMux.Unlock()
 	return nil
 }
 
@@ -111,13 +130,17 @@ func (s *dynamicBrokerSelector) selectBroker(table string) (string, error) {
 	tableName := extractTableName(table)
 	var brokerList []string
 	if tableName == "" {
+		s.rwMux.RLock()
 		brokerList = s.allBrokerList
+		s.rwMux.RUnlock()
 		if len(brokerList) == 0 {
 			return "", fmt.Errorf("No availble broker found")
 		}
 	} else {
 		var found bool
+		s.rwMux.RLock()
 		brokerList, found = s.tableBrokerMap[tableName]
+		s.rwMux.RUnlock()
 		if !found {
 			return "", fmt.Errorf("Unable to find the table: %s", table)
 		}
