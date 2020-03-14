@@ -79,26 +79,32 @@ func (s *dynamicBrokerSelector) refreshExternalView() error {
 		log.Errorf("Failed to read zk ExternalView node: %v\n", s.zkConfig.ZookeeperPath)
 		return err
 	}
-	var ev externalView
-	if err = json.Unmarshal(node, &ev); err != nil {
-		log.Errorf("Failed to unmarshal ExternalView: %s, Error: %v\n", node, err)
+	ev, err := getExternalView(node)
+	if err != nil {
 		return err
 	}
-	jsonBytes, _ := json.Marshal(ev)
-	log.Debugf("JSON Marshal externalView: %s", jsonBytes)
-	newTableBrokerMap := map[string]([]string){}
-	newAllBrokerList := []string{}
+	s.tableBrokerMap, s.allBrokerList = generateNewBrokerMappingExternalView(ev)
+	return nil
+}
+
+func getExternalView(evBytes []byte) (*externalView, error) {
+	var ev externalView
+	if err := json.Unmarshal(evBytes, &ev); err != nil {
+		log.Errorf("Failed to unmarshal ExternalView: %s, Error: %v\n", evBytes, err)
+		return nil, err
+	}
+	return &ev, nil
+}
+
+func generateNewBrokerMappingExternalView(ev *externalView) (map[string]([]string), []string) {
+	tableBrokerMap := map[string]([]string){}
+	allBrokerList := []string{}
 	for table, brokerMapping := range ev.MapFields {
 		tableName := extractTableName(table)
-		newTableBrokerMap[tableName] = extractBrokers(brokerMapping)
-		newAllBrokerList = append(newAllBrokerList, newTableBrokerMap[tableName]...)
+		tableBrokerMap[tableName] = extractBrokers(brokerMapping)
+		allBrokerList = append(allBrokerList, tableBrokerMap[tableName]...)
 	}
-	s.tableBrokerMap = newTableBrokerMap
-	s.allBrokerList = newAllBrokerList
-
-	log.Debugf("Updated tableBrokerMap = %v", s.tableBrokerMap)
-	log.Debugf("Updated allBrokerList = %v", s.allBrokerList)
-	return nil
+	return tableBrokerMap, allBrokerList
 }
 
 func (s *dynamicBrokerSelector) selectBroker(table string) (string, error) {
