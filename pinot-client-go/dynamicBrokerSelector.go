@@ -48,8 +48,7 @@ func (s *dynamicBrokerSelector) init() error {
 		return err
 	}
 	log.Debugf("znode status for brokerExternalViewPath: %+s %+v\n", node, stat)
-	err = s.refreshExternalView()
-	if err != nil {
+	if err = s.refreshExternalView(); err != nil {
 		log.Errorf("Failed to refresh ExternalView: %v\n", err)
 		return err
 	}
@@ -81,8 +80,7 @@ func (s *dynamicBrokerSelector) refreshExternalView() error {
 		return err
 	}
 	var ev externalView
-	err = json.Unmarshal(node, &ev)
-	if err != nil {
+	if err = json.Unmarshal(node, &ev); err != nil {
 		log.Errorf("Failed to unmarshal ExternalView: %s, Error: %v\n", node, err)
 		return err
 	}

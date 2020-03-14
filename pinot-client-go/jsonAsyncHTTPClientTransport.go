@@ -33,24 +33,24 @@ func (t jsonAsyncHTTPClientTransport) execute(brokerAddress string, query *Reque
 	jsonValue, _ := json.Marshal(requestJSON)
 	req, err := createHTTPRequest(url, jsonValue, t.header)
 	if err != nil {
-		log.Error("Invalid HTTP Request", err)
 		return nil, err
 	}
 	resp, err := t.client.Do(req)
 	if err != nil {
-		log.Error("Got exceptions during sending request", err)
+		log.Error("Got exceptions during sending request. ", err)
 		return nil, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusOK {
 		bodyBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			log.Error("Unable to read Pinot response", err)
+			log.Error("Unable to read Pinot response. ", err)
+			return nil, err
 		}
 		var brokerResponse BrokerResponse
 		err = json.Unmarshal(bodyBytes, &brokerResponse)
 		if err != nil {
-			log.Error("Unable to unmarshal json response to a brokerResponse structure.", err)
+			log.Error("Unable to unmarshal json response to a brokerResponse structure. ", err)
 			return nil, err
 		}
 		return &brokerResponse, nil

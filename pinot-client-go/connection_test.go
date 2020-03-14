@@ -114,3 +114,23 @@ func TestSendingQueryWithErrorResponse(t *testing.T) {
 	_, err = pinotClient.ExecutePQL("", "select teamID, count(*) as cnt, sum(homeRuns) as sum_homeRuns from baseballStats group by teamID limit 10")
 	assert.NotNil(t, err)
 }
+
+func TestSendingQueryWithNonJsonResponse(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintln(w, `ProcessingException`)
+	}))
+	defer ts.Close()
+	pinotClient, err := NewFromBrokerList([]string{ts.URL})
+	assert.NotNil(t, pinotClient)
+	assert.NotNil(t, pinotClient.brokerSelector)
+	assert.NotNil(t, pinotClient.transport)
+	assert.Nil(t, err)
+	_, err = pinotClient.ExecuteSQL("", "select teamID, count(*) as cnt, sum(homeRuns) as sum_homeRuns from baseballStats group by teamID limit 10")
+	assert.NotNil(t, err)
+	assert.True(t, strings.HasPrefix(err.Error(), "invalid character"))
+	_, err = pinotClient.ExecutePQL("", "select teamID, count(*) as cnt, sum(homeRuns) as sum_homeRuns from baseballStats group by teamID limit 10")
+	assert.NotNil(t, err)
+	assert.True(t, strings.HasPrefix(err.Error(), "invalid character"))
+}
