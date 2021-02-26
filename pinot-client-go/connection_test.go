@@ -41,7 +41,7 @@ func TestSendingSQLWithMockServer(t *testing.T) {
 
 	badPinotClient := &Connection{
 		transport: &jsonAsyncHTTPClientTransport{
-			client: http.Client{},
+			client: http.DefaultClient,
 		},
 		brokerSelector: &simpleBrokerSelector{
 			brokerList: []string{},
@@ -89,7 +89,7 @@ func TestSendingPQLWithMockServer(t *testing.T) {
 
 	badPinotClient := &Connection{
 		transport: &jsonAsyncHTTPClientTransport{
-			client: http.Client{},
+			client: http.DefaultClient,
 		},
 		brokerSelector: &simpleBrokerSelector{
 			brokerList: []string{},
