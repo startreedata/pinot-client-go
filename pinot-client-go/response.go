@@ -1,5 +1,7 @@
 package pinot
 
+import "encoding/json"
+
 // BrokerResponse is the data structure for broker response.
 type BrokerResponse struct {
 	AggregationResults          []*AggregationResult `json:"aggregationResults,omitempty"`
@@ -91,21 +93,25 @@ func (r ResultTable) GetString(rowIndex int, columnIndex int) string {
 }
 
 // GetInt returns a ResultTable int entry given row index and column index
-func (r ResultTable) GetInt(rowIndex int, columnIndex int) int {
-	return int((r.Rows[rowIndex][columnIndex]).(float64))
+func (r ResultTable) GetInt(rowIndex int, columnIndex int) int32 {
+	val, _ := (r.Rows[rowIndex][columnIndex]).(json.Number).Int64()
+	return int32(val)
 }
 
 // GetLong returns a ResultTable long entry given row index and column index
 func (r ResultTable) GetLong(rowIndex int, columnIndex int) int64 {
-	return int64((r.Rows[rowIndex][columnIndex]).(float64))
+	val, _ := (r.Rows[rowIndex][columnIndex]).(json.Number).Int64()
+	return val
 }
 
 // GetFloat returns a ResultTable float entry given row index and column index
 func (r ResultTable) GetFloat(rowIndex int, columnIndex int) float32 {
-	return float32((r.Rows[rowIndex][columnIndex]).(float64))
+	val, _ := (r.Rows[rowIndex][columnIndex]).(json.Number).Float64()
+	return float32(val)
 }
 
 // GetDouble returns a ResultTable double entry given row index and column index
 func (r ResultTable) GetDouble(rowIndex int, columnIndex int) float64 {
-	return (r.Rows[rowIndex][columnIndex]).(float64)
+	val, _ := (r.Rows[rowIndex][columnIndex]).(json.Number).Float64()
+	return val
 }

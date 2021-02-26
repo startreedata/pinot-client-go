@@ -19,7 +19,7 @@ var (
 
 // jsonAsyncHTTPClientTransport is the impl of clientTransport
 type jsonAsyncHTTPClientTransport struct {
-	client http.Client
+	client *http.Client
 	header map[string]string
 }
 
@@ -48,14 +48,15 @@ func (t jsonAsyncHTTPClientTransport) execute(brokerAddress string, query *Reque
 			return nil, err
 		}
 		var brokerResponse BrokerResponse
-		err = json.Unmarshal(bodyBytes, &brokerResponse)
-		if err != nil {
+		decoder := json.NewDecoder(bytes.NewReader(bodyBytes))
+		decoder.UseNumber()
+		if err = decoder.Decode(&brokerResponse); err != nil {
 			log.Error("Unable to unmarshal json response to a brokerResponse structure. ", err)
 			return nil, err
 		}
 		return &brokerResponse, nil
 	}
-	return nil, fmt.Errorf("Caught http exception when querying Pinot: %v", resp.Status)
+	return nil, fmt.Errorf("caught http exception when querying Pinot: %v", resp.Status)
 }
 
 func getQueryTemplate(queryFormat string, brokerAddress string) string {
