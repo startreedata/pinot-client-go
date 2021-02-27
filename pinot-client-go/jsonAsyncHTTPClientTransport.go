@@ -48,9 +48,7 @@ func (t jsonAsyncHTTPClientTransport) execute(brokerAddress string, query *Reque
 			return nil, err
 		}
 		var brokerResponse BrokerResponse
-		decoder := json.NewDecoder(bytes.NewReader(bodyBytes))
-		decoder.UseNumber()
-		if err = decoder.Decode(&brokerResponse); err != nil {
+		if err = decodeJsonWithNumber(bodyBytes, &brokerResponse); err != nil {
 			log.Error("Unable to unmarshal json response to a brokerResponse structure. ", err)
 			return nil, err
 		}
