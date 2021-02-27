@@ -2,8 +2,6 @@ language: go
 
 go:
 - 1.x
-- "1.10"
-- 1.11.x
 - master
 
 go_import_path: github.com/fx19880617/pinot-client-go
