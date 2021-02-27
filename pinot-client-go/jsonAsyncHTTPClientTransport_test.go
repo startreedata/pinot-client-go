@@ -27,7 +27,7 @@ func TestCreateHTTPRequest(t *testing.T) {
 
 func TestJsonAsyncHTTPClientTransport(t *testing.T) {
 	transport := &jsonAsyncHTTPClientTransport{
-		client: http.Client{},
+		client: http.DefaultClient,
 		header: map[string]string{"a": "b"},
 	}
 	_, err := transport.execute("localhos\t:8000", &Request{

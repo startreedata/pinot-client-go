@@ -1,6 +1,7 @@
 package pinot
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -33,15 +34,15 @@ func TestSendingSQLWithMockServer(t *testing.T) {
 	assert.Equal(t, 1, resp.ResultTable.GetColumnCount())
 	assert.Equal(t, "cnt", resp.ResultTable.GetColumnName(0))
 	assert.Equal(t, "LONG", resp.ResultTable.GetColumnDataType(0))
-	assert.Equal(t, float64(97889), resp.ResultTable.Get(0, 0))
-	assert.Equal(t, 97889, resp.ResultTable.GetInt(0, 0))
+	assert.Equal(t, json.Number("97889"), resp.ResultTable.Get(0, 0))
+	assert.Equal(t, int32(97889), resp.ResultTable.GetInt(0, 0))
 	assert.Equal(t, int64(97889), resp.ResultTable.GetLong(0, 0))
 	assert.Equal(t, float32(97889), resp.ResultTable.GetFloat(0, 0))
 	assert.Equal(t, float64(97889), resp.ResultTable.GetDouble(0, 0))
 
 	badPinotClient := &Connection{
 		transport: &jsonAsyncHTTPClientTransport{
-			client: http.Client{},
+			client: http.DefaultClient,
 		},
 		brokerSelector: &simpleBrokerSelector{
 			brokerList: []string{},
@@ -89,7 +90,7 @@ func TestSendingPQLWithMockServer(t *testing.T) {
 
 	badPinotClient := &Connection{
 		transport: &jsonAsyncHTTPClientTransport{
-			client: http.Client{},
+			client: http.DefaultClient,
 		},
 		brokerSelector: &simpleBrokerSelector{
 			brokerList: []string{},
