@@ -4,7 +4,7 @@ go:
 - 1.x
 - master
 
-go_import_path: github.com/fx19880617/pinot-client-go
+go_import_path: github.com/xiangfu0/pinot-client-go
 
 sudo: false
 
