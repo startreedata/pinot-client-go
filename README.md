@@ -1,8 +1,8 @@
 Pinot Client GO
 ===============
-[![GoDoc](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white)](https://pkg.go.dev/github.com/fx19880617/pinot-client-go)
-[![Build Status](https://travis-ci.org/fx19880617/pinot-client-go.svg?branch=master)](https://travis-ci.org/fx19880617/pinot-client-go)
-[![Coverage Status](https://coveralls.io/repos/github/fx19880617/pinot-client-go/badge.svg?branch=master)](https://coveralls.io/github/fx19880617/pinot-client-go?branch=master)
+[![GoDoc](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white)](https://pkg.go.dev/github.com/xiangfu0/pinot-client-go)
+[![Build Status](https://travis-ci.org/xiangfu0/pinot-client-go.svg?branch=master)](https://travis-ci.org/xiangfu0/pinot-client-go)
+[![Coverage Status](https://coveralls.io/repos/github/xiangfu0/pinot-client-go/badge.svg?branch=master)](https://coveralls.io/github/xiangfu0/pinot-client-go?branch=master)
 
 Applications can use this golang client library to query Apache Pinot.
 
@@ -18,7 +18,7 @@ bin/quick-start-batch.sh
 Check out Client library Github Repo
 
 ```
-git clone git@github.com:fx19880617/pinot-client-go.git
+git clone git@github.com:xiangfu0/pinot-client-go.git
 cd pinot-client-go
 ```
 
@@ -67,7 +67,7 @@ pinotClient := pinot.NewWithConfig(&pinot.ClientConfig{
 Query Pinot
 -----------
 
-Please see this [example](https://github.com/fx19880617/pinot-client-go/blob/master/examples/batch-quickstart/main.go) for your reference.
+Please see this [example](https://github.com/xiangfu0/pinot-client-go/blob/master/examples/batch-quickstart/main.go) for your reference.
 
 Code snippet:
 ```
@@ -148,4 +148,4 @@ func (r ResultTable) GetFloat(rowIndex int, columnIndex int) float32
 func (r ResultTable) GetDouble(rowIndex int, columnIndex int) float64
 ```
 
-Sample Usage is [here](https://github.com/fx19880617/pinot-client-go/blob/master/examples/batch-quickstart/main.go#L58)
+Sample Usage is [here](https://github.com/xiangfu0/pinot-client-go/blob/master/examples/batch-quickstart/main.go#L58)
