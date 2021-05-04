@@ -1,4 +1,4 @@
-module github.com/xiangfu0/pinot-client-go
+module github.com/startreedata/pinot-client-go
 
 require (
 	github.com/mattn/goveralls v0.0.5 // indirect

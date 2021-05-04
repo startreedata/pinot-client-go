@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	pinot "github.com/xiangfu0/pinot-client-go/pinot-client-go"
+	pinot "github.com/startreedata/pinot-client-go/pinot-client-go"
 
 	log "github.com/sirupsen/logrus"
 )
