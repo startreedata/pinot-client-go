@@ -1,5 +1,5 @@
-Pinot Client GO
-===============
+# Pinot Client GO
+
 [![GoDoc](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white)](https://pkg.go.dev/github.com/startreedata/pinot-client-go)
 [![Build Status](https://travis-ci.com/startreedata/pinot-client-go.svg?branch=master)](https://travis-ci.com/startreedata/pinot-client-go)
 [![Coverage Status](https://coveralls.io/repos/github/startreedata/pinot-client-go/badge.svg?branch=master)](https://coveralls.io/github/startreedata/pinot-client-go?branch=master)
@@ -8,8 +8,9 @@ Pinot Client GO
 
 Applications can use this golang client library to query Apache Pinot.
 
-Examples
-========
+# Examples
+
+## Local Pinot test
 
 Please follow this [Pinot Quickstart](https://docs.pinot.apache.org/basics/getting-started/running-pinot-locally) link to install and start Pinot batch quickstart locally.
 
@@ -31,11 +32,18 @@ go build ./examples/batch-quickstart
 ./batch-quickstart
 ```
 
-Usage
-=====
+## Pinot Live Demo cluster
 
-Create a Pinot Connection
--------------------------
+Build and run the example application to query from Pinot Batch Quickstart
+
+```
+go build ./examples/pinot-live-demo
+./pinot-live-demo
+```
+
+# Usage
+
+## Create a Pinot Connection
 
 Pinot client could be initialized through:
 
@@ -47,8 +55,18 @@ pinotClient := pinot.NewFromZookeeper([]string{"localhost:2123"}, "", "QuickStar
 
 2. A list of broker addresses.
 
+- For HTTP
+  Default scheme is HTTP if not specified.
+
 ```
-pinotClient := pinot.NewFromBrokerList([]string{"localhost:8000"})
+pinotClient, err := pinot.NewFromBrokerList([]string{"localhost:8000"})
+```
+
+- For HTTPS
+  Scheme is required to be part of the URI.
+
+```
+pinotClient, err := pinot.NewFromBrokerList([]string{"https://pinot-broker.pinot.live"})
 ```
 
 3. ClientConfig
@@ -66,12 +84,12 @@ pinotClient := pinot.NewWithConfig(&pinot.ClientConfig{
 })
 ```
 
-Query Pinot
------------
+## Query Pinot
 
 Please see this [example](https://github.com/startreedata/pinot-client-go/blob/master/examples/batch-quickstart/main.go) for your reference.
 
 Code snippet:
+
 ```
 pinotClient, err := pinot.NewFromZookeeper([]string{"localhost:2123"}, "", "QuickStartCluster")
 if err != nil {
@@ -84,8 +102,7 @@ if err != nil {
 log.Infof("Query Stats: response time - %d ms, scanned docs - %d, total docs - %d", brokerResp.TimeUsedMs, brokerResp.NumDocsScanned, brokerResp.TotalDocs)
 ```
 
-Response Format
----------------
+## Response Format
 
 Query Response is defined as the struct of following:
 
