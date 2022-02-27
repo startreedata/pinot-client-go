@@ -38,10 +38,10 @@ type GroupValue struct {
 	Group []string `json:"group"`
 }
 
-// SelectionResults is the data structure for PQL aggregation result
+// SelectionResults is the data structure for PQL selection result
 type SelectionResults struct {
 	Columns []string   `json:"columns"`
-	Results [][]string `json:"results"`
+	Results [][]interface{} `json:"results"`
 }
 
 // RespSchema is response schema
