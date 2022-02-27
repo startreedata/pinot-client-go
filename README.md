@@ -32,6 +32,28 @@ go build ./examples/batch-quickstart
 ./batch-quickstart
 ```
 
+## Pinot Json Index QuickStart
+
+Please follow this [Pinot Quickstart](https://docs.pinot.apache.org/basics/getting-started/running-pinot-locally) link to install and start Pinot json batch quickstart locally.
+
+```
+bin/quick-start-json-index-batch.sh
+```
+
+Check out Client library Github Repo
+
+```
+git clone git@github.com:startreedata/pinot-client-go.git
+cd pinot-client-go
+```
+
+Build and run the example application to query from Pinot Json Batch Quickstart
+
+```
+go build ./examples/json-batch-quickstart
+./json-batch-quickstart
+```
+
 ## Pinot Live Demo cluster
 
 Build and run the example application to query from Pinot Batch Quickstart
