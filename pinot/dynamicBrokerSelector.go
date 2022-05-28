@@ -49,7 +49,7 @@ func (s *dynamicBrokerSelector) init() error {
 	}
 	s.readZNode = func(path string) ([]byte, error) {
 		if s.zkConn == nil {
-			return nil, fmt.Errorf("Zk Connection hasn't been initailized.")
+			return nil, fmt.Errorf("Zk Connection hasn't been initialized.")
 		}
 		node, _, err := s.zkConn.Get(s.externalViewZkPath)
 		if err != nil {
@@ -134,7 +134,7 @@ func (s *dynamicBrokerSelector) selectBroker(table string) (string, error) {
 		brokerList = s.allBrokerList
 		s.rwMux.RUnlock()
 		if len(brokerList) == 0 {
-			return "", fmt.Errorf("No availble broker found")
+			return "", fmt.Errorf("No available broker found")
 		}
 	} else {
 		var found bool
@@ -145,7 +145,7 @@ func (s *dynamicBrokerSelector) selectBroker(table string) (string, error) {
 			return "", fmt.Errorf("Unable to find the table: %s", table)
 		}
 		if len(brokerList) == 0 {
-			return "", fmt.Errorf("No availble broker found for table: %s", table)
+			return "", fmt.Errorf("No available broker found for table: %s", table)
 		}
 	}
 	return brokerList[rand.Intn(len(brokerList))], nil

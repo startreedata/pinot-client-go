@@ -32,14 +32,14 @@ func NewFromZookeeper(zkPath []string, zkPathPrefix string, pinotCluster string)
 
 // NewWithConfig create a new Pinot connection.
 func NewWithConfig(config *ClientConfig) (*Connection, error) {
-	tansport := &jsonAsyncHTTPClientTransport{
+	transport := &jsonAsyncHTTPClientTransport{
 		client: http.DefaultClient,
 		header: config.ExtraHTTPHeader,
 	}
 	var conn *Connection
 	if config.ZkConfig != nil {
 		conn = &Connection{
-			transport: tansport,
+			transport: transport,
 			brokerSelector: &dynamicBrokerSelector{
 				zkConfig: config.ZkConfig,
 			},
@@ -47,7 +47,7 @@ func NewWithConfig(config *ClientConfig) (*Connection, error) {
 	}
 	if config.BrokerList != nil && len(config.BrokerList) > 0 {
 		conn = &Connection{
-			transport: tansport,
+			transport: transport,
 			brokerSelector: &simpleBrokerSelector{
 				brokerList: config.BrokerList,
 			},
