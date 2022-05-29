@@ -72,10 +72,18 @@ Pinot client could be initialized through:
 1. Zookeeper Path.
 
 ```
-pinotClient := pinot.NewFromZookeeper([]string{"localhost:2123"}, "", "QuickStartCluster")
+pinotClient, err := pinot.NewFromZookeeper([]string{"localhost:2123"}, "", "QuickStartCluster")
 ```
 
-2. A list of broker addresses.
+2. Controller address.
+
+```
+pinotClient, err := pinot.NewFromController("localhost:9000")
+```
+
+When the controller-based broker selector is used, the client will periodically fetch the table-to-broker mapping from the controller API. When using `http` scheme, the `http://` controller address prefix is optional.
+
+3. A list of broker addresses.
 
 - For HTTP
   Default scheme is HTTP if not specified.
@@ -91,18 +99,41 @@ pinotClient, err := pinot.NewFromBrokerList([]string{"localhost:8000"})
 pinotClient, err := pinot.NewFromBrokerList([]string{"https://pinot-broker.pinot.live"})
 ```
 
-3. ClientConfig
+4. ClientConfig
+
+Via Zookeeper path:
 
 ```
-pinotClient := pinot.NewWithConfig(&pinot.ClientConfig{
+pinotClient, err := pinot.NewWithConfig(&pinot.ClientConfig{
 	ZkConfig: &pinot.ZookeeperConfig{
 		ZookeeperPath:     zkPath,
 		PathPrefix:        strings.Join([]string{zkPathPrefix, pinotCluster}, "/"),
 		SessionTimeoutSec: defaultZkSessionTimeoutSec,
 	},
+	// additional header added to Broker Query API requests
     ExtraHTTPHeader: map[string]string{
         "extra-header":"value",
     },
+})
+```
+
+Via controller address:
+
+```
+pinotClient, err := pinot.NewWithConfig(&pinot.ClientConfig{
+	ControllerConfig: &pinot.ControllerConfig{
+		ControllerAddress: "localhost:9000",
+		// Frequency of broker data refresh in milliseconds via controller API - defaults to 1000ms
+		UpdateFreqMs: 500,
+		// Additional HTTP headers to include in the controller API request
+		ExtraControllerAPIHeaders: map[string]string{
+			"header": "val",
+		},
+	},
+	// additional header added to Broker Query API requests
+	ExtraHTTPHeader: map[string]string{
+		"extra-header": "value",
+	},
 })
 ```
 
