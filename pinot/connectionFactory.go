@@ -30,6 +30,16 @@ func NewFromZookeeper(zkPath []string, zkPathPrefix string, pinotCluster string)
 	return NewWithConfig(clientConfig)
 }
 
+// NewFromController creates a new Pinot connection that periodically fetches available brokers via the Controller API.
+func NewFromController(controllerAddress string) (*Connection, error) {
+	clientConfig := &ClientConfig{
+		ControllerConfig: &ControllerConfig{
+			ControllerAddress: controllerAddress,
+		},
+	}
+	return NewWithConfig(clientConfig)
+}
+
 // NewWithConfig create a new Pinot connection.
 func NewWithConfig(config *ClientConfig) (*Connection, error) {
 	transport := &jsonAsyncHTTPClientTransport{
@@ -53,9 +63,20 @@ func NewWithConfig(config *ClientConfig) (*Connection, error) {
 			},
 		}
 	}
+	if config.ControllerConfig != nil {
+		conn = &Connection{
+			transport: transport,
+			brokerSelector: &controllerBasedSelector{
+				config: config.ControllerConfig,
+				client: http.DefaultClient,
+			},
+		}
+	}
 	if conn != nil {
 		conn.brokerSelector.init()
 		return conn, nil
 	}
-	return nil, fmt.Errorf("please specify at least one of Pinot Zookeeper or Pinot Broker to connect")
+	return nil, fmt.Errorf(
+		"please specify at least one of Pinot Zookeeper, Pinot Broker or Pinot Controller to connect",
+	)
 }
