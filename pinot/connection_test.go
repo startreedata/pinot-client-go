@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -134,4 +135,30 @@ func TestSendingQueryWithNonJsonResponse(t *testing.T) {
 	_, err = pinotClient.ExecutePQL("", "select teamID, count(*) as cnt, sum(homeRuns) as sum_homeRuns from baseballStats group by teamID limit 10")
 	assert.NotNil(t, err)
 	assert.True(t, strings.HasPrefix(err.Error(), "invalid character"))
+}
+
+func TestConnectionWithControllerBasedBrokerSelector(t *testing.T) {
+	firstRequest := true
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		assert.Equal(t, "GET", r.Method)
+		assert.True(t, strings.HasSuffix(r.RequestURI, "/v2/brokers/tables?state=ONLINE"))
+		if firstRequest {
+			firstRequest = false
+			fmt.Fprintln(w, `{"baseballStats":[{"port":8000,"host":"host1","instanceName":"Broker_host1_8000"}]}`)
+		} else {
+			fmt.Fprintln(w, `{"baseballStats":[{"port":8000,"host":"host2","instanceName":"Broker_host2_8000"}]}`)
+		}
+	}))
+	defer ts.Close()
+	pinotClient, err := NewFromController(ts.URL)
+	assert.Nil(t, err)
+	selectedBroker, err := pinotClient.brokerSelector.selectBroker("baseballStats")
+	assert.Nil(t, err)
+	assert.Equal(t, selectedBroker, "host1:8000")
+	time.Sleep(1500 * time.Millisecond)
+	selectedBroker, err = pinotClient.brokerSelector.selectBroker("baseballStats")
+	assert.Nil(t, err)
+	assert.Equal(t, selectedBroker, "host2:8000")
 }
