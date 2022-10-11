@@ -3,10 +3,8 @@ package pinot
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	zk "github.com/samuel/go-zookeeper/zk"
@@ -16,20 +14,16 @@ import (
 
 const (
 	brokerExternalViewPath = "EXTERNALVIEW/brokerResource"
-	offlineSuffix          = "_OFFLINE"
-	realtimeSuffix         = "_REALTIME"
 )
 
 type ReadZNode func(path string) ([]byte, error)
 
 type dynamicBrokerSelector struct {
+	tableAwareBrokerSelector
 	zkConfig               *ZookeeperConfig
 	zkConn                 *zk.Conn
 	externalViewZnodeWatch <-chan zk.Event
 	readZNode              ReadZNode
-	tableBrokerMap         map[string]([]string)
-	allBrokerList          []string
-	rwMux                  sync.RWMutex
 	externalViewZkPath     string
 }
 
@@ -49,7 +43,7 @@ func (s *dynamicBrokerSelector) init() error {
 	}
 	s.readZNode = func(path string) ([]byte, error) {
 		if s.zkConn == nil {
-			return nil, fmt.Errorf("Zk Connection hasn't been initailized.")
+			return nil, fmt.Errorf("Zk Connection hasn't been initialized.")
 		}
 		node, _, err := s.zkConn.Get(s.externalViewZkPath)
 		if err != nil {
@@ -124,35 +118,6 @@ func generateNewBrokerMappingExternalView(ev *externalView) (map[string]([]strin
 		allBrokerList = append(allBrokerList, tableBrokerMap[tableName]...)
 	}
 	return tableBrokerMap, allBrokerList
-}
-
-func (s *dynamicBrokerSelector) selectBroker(table string) (string, error) {
-	tableName := extractTableName(table)
-	var brokerList []string
-	if tableName == "" {
-		s.rwMux.RLock()
-		brokerList = s.allBrokerList
-		s.rwMux.RUnlock()
-		if len(brokerList) == 0 {
-			return "", fmt.Errorf("No availble broker found")
-		}
-	} else {
-		var found bool
-		s.rwMux.RLock()
-		brokerList, found = s.tableBrokerMap[tableName]
-		s.rwMux.RUnlock()
-		if !found {
-			return "", fmt.Errorf("Unable to find the table: %s", table)
-		}
-		if len(brokerList) == 0 {
-			return "", fmt.Errorf("No availble broker found for table: %s", table)
-		}
-	}
-	return brokerList[rand.Intn(len(brokerList))], nil
-}
-
-func extractTableName(table string) string {
-	return strings.Replace(strings.Replace(table, offlineSuffix, "", 1), realtimeSuffix, "", 1)
 }
 
 func extractBrokers(brokerMap map[string]string) []string {

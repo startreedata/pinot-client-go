@@ -27,4 +27,11 @@ func TestPinotClients(t *testing.T) {
 	assert.NotNil(t, pinotClient2.brokerSelector)
 	assert.NotNil(t, pinotClient2.transport)
 	assert.Nil(t, err)
+	pinotClient3, err := NewFromController("localhost:9000")
+	assert.NotNil(t, pinotClient3)
+	assert.NotNil(t, pinotClient3.brokerSelector)
+	assert.NotNil(t, pinotClient3.transport)
+	_, err = NewWithConfig(&ClientConfig{})
+	assert.NotNil(t, err)
+	assert.True(t, strings.Contains(err.Error(), "please specify"))
 }

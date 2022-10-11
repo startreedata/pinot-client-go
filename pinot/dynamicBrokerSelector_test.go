@@ -9,12 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestExtractTableName(t *testing.T) {
-	assert.Equal(t, "table", extractTableName("table_OFFLINE"))
-	assert.Equal(t, "table", extractTableName("table_REALTIME"))
-	assert.Equal(t, "table", extractTableName("table"))
-}
-
 func TestExtractBrokers(t *testing.T) {
 	brokers := extractBrokers(map[string]string{
 		"BROKER_broker-1_1000": "ONLINE",
@@ -38,10 +32,12 @@ func TestExtractBrokerHostPort(t *testing.T) {
 
 func TestErrorInit(t *testing.T) {
 	selector := &dynamicBrokerSelector{
+		tableAwareBrokerSelector: tableAwareBrokerSelector{
+			tableBrokerMap: map[string]([]string){"myTable": []string{}},
+		},
 		zkConfig: &ZookeeperConfig{
 			ZookeeperPath: []string{},
 		},
-		tableBrokerMap: map[string]([]string){"myTable": []string{}},
 	}
 	err := selector.init()
 	assert.NotNil(t, err)
@@ -49,39 +45,14 @@ func TestErrorInit(t *testing.T) {
 
 func TestErrorRefreshExternalView(t *testing.T) {
 	selector := &dynamicBrokerSelector{
+		tableAwareBrokerSelector: tableAwareBrokerSelector{
+			tableBrokerMap: map[string]([]string){"myTable": []string{}},
+		},
 		zkConfig: &ZookeeperConfig{
 			ZookeeperPath: []string{},
 		},
-		tableBrokerMap: map[string]([]string){"myTable": []string{}},
 	}
 	err := selector.refreshExternalView()
-	assert.NotNil(t, err)
-}
-
-func TestSelectBroker(t *testing.T) {
-	selector := &dynamicBrokerSelector{
-		tableBrokerMap: map[string]([]string){"myTable": []string{"localhost:8000"}},
-		allBrokerList:  []string{"localhost:8000"},
-	}
-	broker, err := selector.selectBroker("")
-	assert.Equal(t, "localhost:8000", broker)
-	assert.Nil(t, err)
-	broker, err = selector.selectBroker("myTable")
-	assert.Equal(t, "localhost:8000", broker)
-	assert.Nil(t, err)
-	_, err = selector.selectBroker("unexistTable")
-	assert.NotNil(t, err)
-}
-
-func TestErrorSelectBroker(t *testing.T) {
-	emptySelector := &dynamicBrokerSelector{
-		tableBrokerMap: map[string]([]string){"myTable": []string{}},
-	}
-	_, err := emptySelector.selectBroker("")
-	assert.NotNil(t, err)
-	_, err = emptySelector.selectBroker("myTable")
-	assert.NotNil(t, err)
-	_, err = emptySelector.selectBroker("unexistTable")
 	assert.NotNil(t, err)
 }
 
