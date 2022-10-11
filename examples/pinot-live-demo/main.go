@@ -32,16 +32,6 @@ func main() {
 		}
 		printBrokerResp(brokerResp)
 	}
-
-	log.Infof("Querying PQL")
-	for _, query := range pinotQueries {
-		log.Infof("Trying to query Pinot: %v", query)
-		brokerResp, err := pinotClient.ExecutePQL(table, query)
-		if err != nil {
-			log.Error(err)
-		}
-		printBrokerResp(brokerResp)
-	}
 }
 
 func printBrokerResp(brokerResp *pinot.BrokerResponse) {
