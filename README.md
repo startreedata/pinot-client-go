@@ -137,6 +137,26 @@ pinotClient, err := pinot.NewWithConfig(&pinot.ClientConfig{
 })
 ```
 
+### Add HTTP timeout for Pinot Queries
+
+By Default this client uses golang's default http timeout, which is "No TImeout". If you want pinot queries to timeout within given time, add `HTTPTimeout` in `ClientConfig`
+
+```
+pinotClient, err := pinot.NewWithConfig(&pinot.ClientConfig{
+	ZkConfig: &pinot.ZookeeperConfig{
+		ZookeeperPath:     zkPath,
+		PathPrefix:        strings.Join([]string{zkPathPrefix, pinotCluster}, "/"),
+		SessionTimeoutSec: defaultZkSessionTimeoutSec,
+	},
+	// additional header added to Broker Query API requests
+    ExtraHTTPHeader: map[string]string{
+        "extra-header":"value",
+    },
+	// optional HTTP timeout parameter for Pinot Queries.
+	HTTPTimeout: 300 * time.Millisecond,
+})
+```
+
 ## Query Pinot
 
 Please see this [example](https://github.com/startreedata/pinot-client-go/blob/master/examples/batch-quickstart/main.go) for your reference.

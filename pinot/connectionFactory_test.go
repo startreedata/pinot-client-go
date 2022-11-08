@@ -3,6 +3,7 @@ package pinot
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -34,4 +35,18 @@ func TestPinotClients(t *testing.T) {
 	_, err = NewWithConfig(&ClientConfig{})
 	assert.NotNil(t, err)
 	assert.True(t, strings.Contains(err.Error(), "please specify"))
+}
+
+func TestPinotWithHttpTImeout(t *testing.T) {
+	pinotClient , err := NewWithConfig(&ClientConfig{
+		BrokerList: []string{"www.google.com:81"},
+		HTTPTimeout: 1 * time.Second,
+	})
+	assert.Nil(t,err)
+	start := time.Now()
+	_ , err = pinotClient.ExecuteSQL("testTable","select * from testTable");
+	end := time.Since(start)
+	assert.NotNil(t,err)
+	diff := int(end.Seconds())
+	assert.Equal(t,1,diff)
 }
