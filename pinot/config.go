@@ -1,10 +1,15 @@
 package pinot
 
+import "time"
+
 // ClientConfig configs to create a PinotDbConnection
 type ClientConfig struct {
 
 	// Additional HTTP headers to include in broker query API requests
 	ExtraHTTPHeader map[string]string
+
+	// HTTP request timeout in your broker query for API requests
+	HTTPTimeout time.Duration
 
 	// Zookeeper Configs
 	ZkConfig *ZookeeperConfig

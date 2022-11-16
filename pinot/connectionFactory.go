@@ -46,6 +46,12 @@ func NewWithConfig(config *ClientConfig) (*Connection, error) {
 		client: http.DefaultClient,
 		header: config.ExtraHTTPHeader,
 	}
+
+	// Set HTTPTimeout from config
+	if config.HTTPTimeout != 0 {
+		transport.client.Timeout = config.HTTPTimeout
+	}
+
 	var conn *Connection
 	if config.ZkConfig != nil {
 		conn = &Connection{

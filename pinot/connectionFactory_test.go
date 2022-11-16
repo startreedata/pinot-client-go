@@ -3,6 +3,7 @@ package pinot
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -34,4 +35,23 @@ func TestPinotClients(t *testing.T) {
 	_, err = NewWithConfig(&ClientConfig{})
 	assert.NotNil(t, err)
 	assert.True(t, strings.Contains(err.Error(), "please specify"))
+}
+
+func TestPinotWithHttpTImeout(t *testing.T) {
+	pinotClient , err := NewWithConfig(&ClientConfig{
+		// Hit an unreachable port
+		BrokerList: []string{"www.google.com:81"},
+		// Set timeout to 1 sec
+		HTTPTimeout: 1 * time.Second,
+	})
+	assert.Nil(t,err)
+	start := time.Now()
+	_ , err = pinotClient.ExecuteSQL("testTable","select * from testTable");
+	end := time.Since(start)
+	assert.NotNil(t,err)
+	diff := int(end.Seconds())
+	// Query should ideally timeout in 1 sec, considering other variables,
+	// diff might not be exactly equal to 1. So, we can assert that diff 
+	// must be less than 2 sec. 
+	assert.Less(t,diff,2)
 }
