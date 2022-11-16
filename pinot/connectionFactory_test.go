@@ -39,7 +39,9 @@ func TestPinotClients(t *testing.T) {
 
 func TestPinotWithHttpTImeout(t *testing.T) {
 	pinotClient , err := NewWithConfig(&ClientConfig{
+		// Hit an unreachable port
 		BrokerList: []string{"www.google.com:81"},
+		// Set timeout to 1 sec
 		HTTPTimeout: 1 * time.Second,
 	})
 	assert.Nil(t,err)
@@ -48,5 +50,8 @@ func TestPinotWithHttpTImeout(t *testing.T) {
 	end := time.Since(start)
 	assert.NotNil(t,err)
 	diff := int(end.Seconds())
-	assert.Equal(t,1,diff)
+	// Query should ideally timeout in 1 sec, considering other variables,
+	// diff might not be exactly equal to 1. So, we can assert that diff 
+	// must be less than 2 sec. 
+	assert.Less(t,diff,2)
 }
