@@ -30,6 +30,9 @@ func (t jsonAsyncHTTPClientTransport) execute(brokerAddress string, query *Reque
 	if query.queryFormat == "sql" {
 		requestJSON["queryOptions"] = "groupByMode=sql;responseFormat=sql"
 	}
+	if query.trace {
+		requestJSON["trace"] = "true"
+	}
 	jsonValue, _ := json.Marshal(requestJSON)
 	req, err := createHTTPRequest(url, jsonValue, t.header)
 	if err != nil {

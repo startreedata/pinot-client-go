@@ -4,4 +4,5 @@ package pinot
 type Request struct {
 	queryFormat string
 	query       string
+	trace       bool
 }

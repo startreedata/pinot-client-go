@@ -25,6 +25,14 @@ func TestCreateHTTPRequest(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
+func TestCreateHTTPRequestWithTrace(t *testing.T) {
+	r, err := createHTTPRequest("localhost:8000", []byte(`{"sql": "select * from baseballStats limit 10", "trace": "true"}`), map[string]string{"a": "b"})
+	assert.Nil(t, err)
+	assert.Equal(t, "POST", r.Method)
+	_, err = createHTTPRequest("localhos\t:8000", []byte(`{"sql": "select * from baseballStats limit 10", "trace": "true"}`), map[string]string{"a": "b"})
+	assert.NotNil(t, err)
+}
+
 func TestJsonAsyncHTTPClientTransport(t *testing.T) {
 	transport := &jsonAsyncHTTPClientTransport{
 		client: http.DefaultClient,
