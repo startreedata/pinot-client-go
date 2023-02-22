@@ -1,5 +1,5 @@
 # Pinot Client GO
-
+[![Go 1.19](https://img.shields.io/badge/go-1.19-blue.svg)](https://golang.org/dl/#go1.19)
 [![GoDoc](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white)](https://pkg.go.dev/github.com/startreedata/pinot-client-go)
 [![Build Status](https://travis-ci.com/startreedata/pinot-client-go.svg?branch=master)](https://travis-ci.com/startreedata/pinot-client-go)
 [![Coverage Status](https://coveralls.io/repos/github/startreedata/pinot-client-go/badge.svg?branch=master)](https://coveralls.io/github/startreedata/pinot-client-go?branch=master)
