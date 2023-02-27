@@ -40,7 +40,7 @@ type GroupValue struct {
 
 // SelectionResults is the data structure for PQL selection result
 type SelectionResults struct {
-	Columns []string   `json:"columns"`
+	Columns []string        `json:"columns"`
 	Results [][]interface{} `json:"results"`
 }
 
