@@ -35,3 +35,9 @@ jobs:
 
       - name: Test
         run: make test
+
+      - name: Publish to coveralls.io
+        uses: coverallsapp/github-action@v1
+        with:
+          github-token: ${{ github.token }}
+          path-to-lcov: profile.cov
