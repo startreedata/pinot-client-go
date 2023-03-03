@@ -109,3 +109,38 @@ func TestConnectionWithControllerBasedBrokerSelector(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, selectedBroker, "host2:8000")
 }
+
+func TestSendingQueryWithTraceOpen(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var request map[string]string
+		json.NewDecoder(r.Body).Decode(&request)
+		assert.Equal(t, request["trace"], "true")
+	}))
+	defer ts.Close()
+	pinotClient, err := NewFromBrokerList([]string{ts.URL})
+	assert.NotNil(t, pinotClient)
+	assert.NotNil(t, pinotClient.brokerSelector)
+	assert.NotNil(t, pinotClient.transport)
+	assert.Nil(t, err)
+	pinotClient.OpenTrace()
+	pinotClient.ExecuteSQL("", "select teamID, count(*) as cnt, sum(homeRuns) as sum_homeRuns from baseballStats group by teamID limit 10")
+}
+
+func TestSendingQueryWithTraceClose(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var request map[string]string
+		json.NewDecoder(r.Body).Decode(&request)
+		_, ok := request["trace"]
+		assert.False(t, ok)
+	}))
+	defer ts.Close()
+	pinotClient, err := NewFromBrokerList([]string{ts.URL})
+	assert.NotNil(t, pinotClient)
+	assert.NotNil(t, pinotClient.brokerSelector)
+	assert.NotNil(t, pinotClient.transport)
+	assert.Nil(t, err)
+	pinotClient.ExecuteSQL("", "select teamID, count(*) as cnt, sum(homeRuns) as sum_homeRuns from baseballStats group by teamID limit 10")
+	pinotClient.OpenTrace()
+	pinotClient.CloseTrace()
+	pinotClient.ExecuteSQL("", "select teamID, count(*) as cnt, sum(homeRuns) as sum_homeRuns from baseballStats group by teamID limit 10")
+}
