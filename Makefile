@@ -29,3 +29,4 @@ build:
 .PHONY: test
 test: build
 	go test -timeout 500s -v -race -covermode atomic -coverprofile=profile.cov $(PACKAGES)
+
