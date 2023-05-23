@@ -1,7 +1,7 @@
 module github.com/startreedata/pinot-client-go
 
 require (
-	github.com/samuel/go-zookeeper v0.0.0-20201211165307-7117e9ea2414
+	github.com/go-zookeeper/zk v1.0.3
 	github.com/sirupsen/logrus v1.9.0
 	github.com/stretchr/testify v1.8.0
 )
