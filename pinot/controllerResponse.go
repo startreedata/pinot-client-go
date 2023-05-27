@@ -6,9 +6,9 @@ import (
 )
 
 type brokerDto struct {
-	Port         int    `json:"port"`
 	Host         string `json:"host"`
 	InstanceName string `json:"instanceName"`
+	Port         int    `json:"port"`
 }
 
 type controllerResponse map[string]([]brokerDto)

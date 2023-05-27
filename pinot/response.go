@@ -4,24 +4,24 @@ import "encoding/json"
 
 // BrokerResponse is the data structure for broker response.
 type BrokerResponse struct {
-	AggregationResults          []*AggregationResult `json:"aggregationResults,omitempty"`
 	SelectionResults            *SelectionResults    `json:"SelectionResults,omitempty"`
 	ResultTable                 *ResultTable         `json:"resultTable,omitempty"`
-	Exceptions                  []Exception          `json:"exceptions"`
 	TraceInfo                   map[string]string    `json:"traceInfo,omitempty"`
-	NumServersQueried           int                  `json:"numServersQueried"`
+	AggregationResults          []*AggregationResult `json:"aggregationResults,omitempty"`
+	Exceptions                  []Exception          `json:"exceptions"`
+	NumSegmentsProcessed        int                  `json:"numSegmentsProcessed"`
 	NumServersResponded         int                  `json:"numServersResponded"`
 	NumSegmentsQueried          int                  `json:"numSegmentsQueried"`
-	NumSegmentsProcessed        int                  `json:"numSegmentsProcessed"`
+	NumServersQueried           int                  `json:"numServersQueried"`
 	NumSegmentsMatched          int                  `json:"numSegmentsMatched"`
 	NumConsumingSegmentsQueried int                  `json:"numConsumingSegmentsQueried"`
 	NumDocsScanned              int64                `json:"numDocsScanned"`
 	NumEntriesScannedInFilter   int64                `json:"numEntriesScannedInFilter"`
 	NumEntriesScannedPostFilter int64                `json:"numEntriesScannedPostFilter"`
-	NumGroupsLimitReached       bool                 `json:"numGroupsLimitReached"`
 	TotalDocs                   int64                `json:"totalDocs"`
 	TimeUsedMs                  int                  `json:"timeUsedMs"`
 	MinConsumingFreshnessTimeMs int64                `json:"minConsumingFreshnessTimeMs"`
+	NumGroupsLimitReached       bool                 `json:"numGroupsLimitReached"`
 }
 
 // AggregationResult is the data structure for PQL aggregation result
@@ -52,8 +52,8 @@ type RespSchema struct {
 
 // Exception is Pinot exceptions.
 type Exception struct {
-	ErrorCode int    `json:"errorCode"`
 	Message   string `json:"message"`
+	ErrorCode int    `json:"errorCode"`
 }
 
 // ResultTable is a ResultTable

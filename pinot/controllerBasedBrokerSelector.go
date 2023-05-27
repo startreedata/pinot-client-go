@@ -26,10 +26,10 @@ type HTTPClient interface {
 }
 
 type controllerBasedSelector struct {
-	tableAwareBrokerSelector
-	controllerAPIReqUrl string
-	config              *ControllerConfig
 	client              HTTPClient
+	config              *ControllerConfig
+	controllerAPIReqUrl string
+	tableAwareBrokerSelector
 }
 
 func (s *controllerBasedSelector) init() error {
