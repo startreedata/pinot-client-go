@@ -26,7 +26,6 @@ func TestSimpleBrokerSelector(t *testing.T) {
 		assert.Equal(t, "broker", brokerName[0:6])
 		assert.Nil(t, err)
 	}
-
 }
 
 func TestWithEmptyBrokerList(t *testing.T) {

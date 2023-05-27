@@ -79,7 +79,10 @@ func NewWithConfig(config *ClientConfig) (*Connection, error) {
 		}
 	}
 	if conn != nil {
-		conn.brokerSelector.init()
+		err := conn.brokerSelector.init()
+		if err != nil {
+			return nil, err
+		}
 		return conn, nil
 	}
 	return nil, fmt.Errorf(

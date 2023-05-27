@@ -21,6 +21,7 @@ setup: install-covertools install-deps
 lint:
 	go fmt ./...
 	go vet ./...
+	golangci-lint run
 
 .PHONY: build
 build:

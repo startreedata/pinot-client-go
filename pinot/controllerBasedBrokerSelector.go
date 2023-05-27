@@ -2,7 +2,7 @@ package pinot
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -118,7 +118,7 @@ func (s *controllerBasedSelector) updateBrokerData() error {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusOK {
-		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return fmt.Errorf("An error occurred when reading controller API response: %v", err)
 		}
