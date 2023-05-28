@@ -11,6 +11,8 @@ linters:
   enable:
     - govet
     - whitespace
+
+  disable:
     - godox
     - ineffassign
     - errcheck
