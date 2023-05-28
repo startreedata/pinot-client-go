@@ -18,9 +18,9 @@ type ClientConfig struct {
 
 // ZookeeperConfig describes how to config Pinot Zookeeper connection
 type ZookeeperConfig struct {
+	SessionTimeoutSec int
 	PathPrefix        string
 	ZookeeperPath     []string
-	SessionTimeoutSec int
 }
 
 // ControllerConfig describes connection of a controller-based selector that

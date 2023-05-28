@@ -9,11 +9,11 @@ output:
 
 linters:
   enable:
-    - godox
     - govet
     - whitespace
 
   disable:
+    - godox
     - ineffassign
     - errcheck
     - staticcheck
