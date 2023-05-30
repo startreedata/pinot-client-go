@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 
@@ -45,7 +45,7 @@ func (t jsonAsyncHTTPClientTransport) execute(brokerAddress string, query *Reque
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusOK {
-		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
 			log.Error("Unable to read Pinot response. ", err)
 			return nil, err

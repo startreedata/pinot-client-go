@@ -41,7 +41,6 @@ func TestSqlSelectionQueryResponse(t *testing.T) {
 		assert.Equal(t, expectedColumnNames[i], brokerResponse.ResultTable.GetColumnName(i))
 		assert.Equal(t, expectedColumnTypes[i], brokerResponse.ResultTable.GetColumnDataType(i))
 	}
-
 }
 
 func TestSqlAggregationQueryResponse(t *testing.T) {

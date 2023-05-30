@@ -14,8 +14,8 @@ import (
 )
 
 type MockHTTPClientSuccess struct {
-	statusCode int
 	body       io.ReadCloser
+	statusCode int
 }
 
 func (m *MockHTTPClientSuccess) Do(req *http.Request) (*http.Response, error) {

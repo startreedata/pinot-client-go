@@ -19,19 +19,19 @@ const (
 type ReadZNode func(path string) ([]byte, error)
 
 type dynamicBrokerSelector struct {
-	tableAwareBrokerSelector
 	zkConfig               *ZookeeperConfig
 	zkConn                 *zk.Conn
 	externalViewZnodeWatch <-chan zk.Event
 	readZNode              ReadZNode
 	externalViewZkPath     string
+	tableAwareBrokerSelector
 }
 
 type externalView struct {
-	ID           string                         `json:"id"`
 	SimpleFields map[string]string              `json:"simpleFields"`
 	MapFields    map[string](map[string]string) `json:"mapFields"`
 	ListFields   map[string]([]string)          `json:"listFields"`
+	ID           string                         `json:"id"`
 }
 
 func (s *dynamicBrokerSelector) init() error {

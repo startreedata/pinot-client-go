@@ -79,6 +79,7 @@ func NewWithConfig(config *ClientConfig) (*Connection, error) {
 		}
 	}
 	if conn != nil {
+		// TODO: error handling results into `make test` failure.
 		conn.brokerSelector.init()
 		return conn, nil
 	}
