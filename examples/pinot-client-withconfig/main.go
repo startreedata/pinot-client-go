@@ -12,7 +12,7 @@ import (
 
 func connectPinot() *pinot.Connection {
 	pinotClient, err := pinot.NewWithConfig(&pinot.ClientConfig{
-		BrokerList:  []string{"https://pinot-broker.pinot.live"},
+		BrokerList:  []string{"https://broker.pinot.myorg.mycompany.startree.cloud"},
 		HTTPTimeout: 1500 * time.Millisecond,
 		ExtraHTTPHeader: map[string]string{
 			"authorization": "Basic <API-TOKEN>",
