@@ -1,5 +1,6 @@
 # make file to hold the logic of build and test setup
-PACKAGES := $(shell go list ./... | grep -v examples)
+PACKAGES := $(shell go list ./... | grep -v examples| grep -v integration-tests)
+INTEGRATION_TESTS_PACKAGES := $(shell go list ./... | grep integration-tests)
 
 .DEFAULT_GOAL := test
 
@@ -30,3 +31,14 @@ build:
 test: build
 	go test -timeout 500s -v -race -covermode atomic -coverprofile=profile.cov $(PACKAGES)
 
+.PHONY: run-pinot-dist
+run-pinot-dist:
+	./scripts/start-pinot-quickstart.sh
+
+.PHONY: run-pinot-docker
+run-pinot-docker:
+	docker run --name pinot-quickstart -p 2123:2123 -p 9000:9000 -p 8000:8000 apachepinot/pinot:latest QuickStart -type MULTI_STAGE
+
+.PHONY: integration-test
+integration-test: build
+	go test -timeout 500s -v -race -covermode atomic -coverprofile=profile.cov $(INTEGRATION_TESTS_PACKAGES)
