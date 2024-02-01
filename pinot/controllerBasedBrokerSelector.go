@@ -21,6 +21,7 @@ var (
 	}
 )
 
+// HTTPClient is an interface for http.Client
 type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
@@ -28,7 +29,7 @@ type HTTPClient interface {
 type controllerBasedSelector struct {
 	client              HTTPClient
 	config              *ControllerConfig
-	controllerAPIReqUrl string
+	controllerAPIReqURL string
 	tableAwareBrokerSelector
 }
 
@@ -36,19 +37,15 @@ func (s *controllerBasedSelector) init() error {
 	if s.config.UpdateFreqMs == 0 {
 		s.config.UpdateFreqMs = defaultUpdateFreqMs
 	}
-	u, err := getControllerRequestUrl(s.config.ControllerAddress)
+	var err error
+	s.controllerAPIReqURL, err = getControllerRequestURL(s.config.ControllerAddress)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("An error occurred when parsing controller address: %v", err)
 		return err
 	}
-	s.controllerAPIReqUrl = u
 
-	err = s.updateBrokerData()
-	if err != nil {
-		log.Errorf(
-			"An error occurred when fetching broker data from controller API for the first time, Error: %v",
-			err,
-		)
+	if err = s.updateBrokerData(); err != nil {
+		log.Errorf("An error occurred when fetching broker data from controller API for the first time, Error: %v", err)
 		return err
 	}
 	go s.setupInterval()
@@ -73,7 +70,7 @@ func (s *controllerBasedSelector) setupInterval() {
 	}
 }
 
-func getControllerRequestUrl(controllerAddress string) (string, error) {
+func getControllerRequestURL(controllerAddress string) (string, error) {
 	tokenized := strings.Split(controllerAddress, "://")
 	addressWithScheme := controllerAddress
 	if len(tokenized) > 1 {
@@ -91,12 +88,9 @@ func getControllerRequestUrl(controllerAddress string) (string, error) {
 }
 
 func (s *controllerBasedSelector) createControllerRequest() (*http.Request, error) {
-	r, err := http.NewRequest("GET", s.controllerAPIReqUrl, nil)
+	r, err := http.NewRequest("GET", s.controllerAPIReqURL, nil)
 	if err != nil {
-		return r, fmt.Errorf(
-			"Caught exception when creating controller API request: %v",
-			err,
-		)
+		return r, fmt.Errorf("Caught exception when creating controller API request: %v", err)
 	}
 	for k, v := range controllerDefaultHTTPHeader {
 		r.Header.Add(k, v)
@@ -116,14 +110,18 @@ func (s *controllerBasedSelector) updateBrokerData() error {
 	if err != nil {
 		return fmt.Errorf("Got exceptions while sending controller API request: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Error("Unable to close response body. ", err)
+		}
+	}()
 	if resp.StatusCode == http.StatusOK {
 		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return fmt.Errorf("An error occurred when reading controller API response: %v", err)
 		}
 		var c controllerResponse
-		if err = decodeJsonWithNumber(bodyBytes, &c); err != nil {
+		if err = decodeJSONWithNumber(bodyBytes, &c); err != nil {
 			return fmt.Errorf("An error occurred when decoding controller API response: %v", err)
 		}
 		s.rwMux.Lock()

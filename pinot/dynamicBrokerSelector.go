@@ -16,6 +16,7 @@ const (
 	brokerExternalViewPath = "EXTERNALVIEW/brokerResource"
 )
 
+// ReadZNode reads a ZNode content as bytes from Zookeeper
 type ReadZNode func(path string) ([]byte, error)
 
 type dynamicBrokerSelector struct {
@@ -42,13 +43,10 @@ func (s *dynamicBrokerSelector) init() error {
 		return err
 	}
 	s.readZNode = func(path string) ([]byte, error) {
-		if s.zkConn == nil {
-			return nil, fmt.Errorf("Zk Connection hasn't been initialized.")
-		}
-		node, _, err := s.zkConn.Get(s.externalViewZkPath)
-		if err != nil {
+		node, _, err2 := s.zkConn.Get(s.externalViewZkPath)
+		if err2 != nil {
 			log.Errorf("Failed to read zk: %s, ExternalView path: %s\n", s.zkConfig.ZookeeperPath, s.externalViewZkPath)
-			return nil, err
+			return nil, err2
 		}
 		return node, nil
 	}
@@ -67,14 +65,13 @@ func (s *dynamicBrokerSelector) init() error {
 
 func (s *dynamicBrokerSelector) setupWatcher() {
 	for {
-		select {
-		case ev := <-s.externalViewZnodeWatch:
-			if ev.Err != nil {
-				log.Error("GetW watcher error", ev.Err)
-			} else if ev.Type == zk.EventNodeDataChanged {
-				s.refreshExternalView()
+		ev := <-s.externalViewZnodeWatch
+		if ev.Err != nil {
+			log.Error("GetW watcher error", ev.Err)
+		} else if ev.Type == zk.EventNodeDataChanged {
+			if err := s.refreshExternalView(); err != nil {
+				log.Errorf("Failed to refresh ExternalView, Error: %v\n", err)
 			}
-			break
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
@@ -82,7 +79,7 @@ func (s *dynamicBrokerSelector) setupWatcher() {
 
 func (s *dynamicBrokerSelector) refreshExternalView() error {
 	if s.readZNode == nil {
-		return fmt.Errorf("No method defined to read from a ZNode.")
+		return fmt.Errorf("No method defined to read from a ZNode")
 	}
 	node, err := s.readZNode(s.externalViewZkPath)
 	if err != nil {

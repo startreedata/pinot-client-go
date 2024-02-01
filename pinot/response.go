@@ -1,6 +1,10 @@
 package pinot
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	log "github.com/sirupsen/logrus"
+)
 
 // BrokerResponse is the data structure for broker response.
 type BrokerResponse struct {
@@ -94,24 +98,40 @@ func (r ResultTable) GetString(rowIndex int, columnIndex int) string {
 
 // GetInt returns a ResultTable int entry given row index and column index
 func (r ResultTable) GetInt(rowIndex int, columnIndex int) int32 {
-	val, _ := (r.Rows[rowIndex][columnIndex]).(json.Number).Int64()
+	val, err := (r.Rows[rowIndex][columnIndex]).(json.Number).Int64()
+	if err != nil {
+		log.Errorf("Error converting to int: %v", err)
+		return 0
+	}
 	return int32(val)
 }
 
 // GetLong returns a ResultTable long entry given row index and column index
 func (r ResultTable) GetLong(rowIndex int, columnIndex int) int64 {
-	val, _ := (r.Rows[rowIndex][columnIndex]).(json.Number).Int64()
+	val, err := (r.Rows[rowIndex][columnIndex]).(json.Number).Int64()
+	if err != nil {
+		log.Errorf("Error converting to long: %v", err)
+		return 0
+	}
 	return val
 }
 
 // GetFloat returns a ResultTable float entry given row index and column index
 func (r ResultTable) GetFloat(rowIndex int, columnIndex int) float32 {
-	val, _ := (r.Rows[rowIndex][columnIndex]).(json.Number).Float64()
+	val, err := (r.Rows[rowIndex][columnIndex]).(json.Number).Float64()
+	if err != nil {
+		log.Errorf("Error converting to float: %v", err)
+		return 0
+	}
 	return float32(val)
 }
 
 // GetDouble returns a ResultTable double entry given row index and column index
 func (r ResultTable) GetDouble(rowIndex int, columnIndex int) float64 {
-	val, _ := (r.Rows[rowIndex][columnIndex]).(json.Number).Float64()
+	val, err := (r.Rows[rowIndex][columnIndex]).(json.Number).Float64()
+	if err != nil {
+		log.Errorf("Error converting to double: %v", err)
+		return 0
+	}
 	return val
 }

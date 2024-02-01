@@ -13,7 +13,8 @@ func TestPinotClients(t *testing.T) {
 	assert.NotNil(t, pinotClient1)
 	assert.NotNil(t, pinotClient1.brokerSelector)
 	assert.NotNil(t, pinotClient1.transport)
-	assert.Nil(t, err)
+	// Since there is no zk setup, so an error will be raised
+	assert.NotNil(t, err)
 	pinotClient2, err := NewWithConfig(&ClientConfig{
 		ZkConfig: &ZookeeperConfig{
 			ZookeeperPath:     []string{"localhost:2181"},
@@ -27,11 +28,14 @@ func TestPinotClients(t *testing.T) {
 	assert.NotNil(t, pinotClient2)
 	assert.NotNil(t, pinotClient2.brokerSelector)
 	assert.NotNil(t, pinotClient2.transport)
-	assert.Nil(t, err)
+	// Since there is no zk setup, so an error will be raised
+	assert.NotNil(t, err)
 	pinotClient3, err := NewFromController("localhost:9000")
 	assert.NotNil(t, pinotClient3)
 	assert.NotNil(t, pinotClient3.brokerSelector)
 	assert.NotNil(t, pinotClient3.transport)
+	// Since there is no controller setup, so an error will be raised
+	assert.NotNil(t, err)
 	_, err = NewWithConfig(&ClientConfig{})
 	assert.NotNil(t, err)
 	assert.True(t, strings.Contains(err.Error(), "please specify"))

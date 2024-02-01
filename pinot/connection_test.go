@@ -113,8 +113,9 @@ func TestConnectionWithControllerBasedBrokerSelector(t *testing.T) {
 func TestSendingQueryWithTraceOpen(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var request map[string]string
-		json.NewDecoder(r.Body).Decode(&request)
+		err := json.NewDecoder(r.Body).Decode(&request)
 		assert.Equal(t, request["trace"], "true")
+		assert.Nil(t, err)
 	}))
 	defer ts.Close()
 	pinotClient, err := NewFromBrokerList([]string{ts.URL})
@@ -123,13 +124,16 @@ func TestSendingQueryWithTraceOpen(t *testing.T) {
 	assert.NotNil(t, pinotClient.transport)
 	assert.Nil(t, err)
 	pinotClient.OpenTrace()
-	pinotClient.ExecuteSQL("", "select teamID, count(*) as cnt, sum(homeRuns) as sum_homeRuns from baseballStats group by teamID limit 10")
+	resp, err := pinotClient.ExecuteSQL("", "select teamID, count(*) as cnt, sum(homeRuns) as sum_homeRuns from baseballStats group by teamID limit 10")
+	assert.Nil(t, resp)
+	assert.NotNil(t, err)
 }
 
 func TestSendingQueryWithTraceClose(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var request map[string]string
-		json.NewDecoder(r.Body).Decode(&request)
+		err := json.NewDecoder(r.Body).Decode(&request)
+		assert.Nil(t, err)
 		_, ok := request["trace"]
 		assert.False(t, ok)
 	}))
@@ -139,8 +143,12 @@ func TestSendingQueryWithTraceClose(t *testing.T) {
 	assert.NotNil(t, pinotClient.brokerSelector)
 	assert.NotNil(t, pinotClient.transport)
 	assert.Nil(t, err)
-	pinotClient.ExecuteSQL("", "select teamID, count(*) as cnt, sum(homeRuns) as sum_homeRuns from baseballStats group by teamID limit 10")
+	resp, err := pinotClient.ExecuteSQL("", "select teamID, count(*) as cnt, sum(homeRuns) as sum_homeRuns from baseballStats group by teamID limit 10")
+	assert.Nil(t, resp)
+	assert.NotNil(t, err)
 	pinotClient.OpenTrace()
 	pinotClient.CloseTrace()
-	pinotClient.ExecuteSQL("", "select teamID, count(*) as cnt, sum(homeRuns) as sum_homeRuns from baseballStats group by teamID limit 10")
+	resp, err = pinotClient.ExecuteSQL("", "select teamID, count(*) as cnt, sum(homeRuns) as sum_homeRuns from baseballStats group by teamID limit 10")
+	assert.Nil(t, resp)
+	assert.NotNil(t, err)
 }

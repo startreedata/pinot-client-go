@@ -30,10 +30,12 @@ func (c *Connection) ExecuteSQL(table string, query string) (*BrokerResponse, er
 	return brokerResp, err
 }
 
+// OpenTrace for the connection
 func (c *Connection) OpenTrace() {
 	c.trace = true
 }
 
+// CloseTrace for the connection
 func (c *Connection) CloseTrace() {
 	c.trace = false
 }
