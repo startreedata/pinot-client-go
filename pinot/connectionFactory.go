@@ -12,14 +12,24 @@ const (
 
 // NewFromBrokerList create a new Pinot connection with pre configured Pinot Broker list.
 func NewFromBrokerList(brokerList []string) (*Connection, error) {
+	return NewFromBrokerListAndClient(brokerList, http.DefaultClient)
+}
+
+// NewFromBrokerListAndClient create a new Pinot connection with pre configured Pinot Broker list and http client.
+func NewFromBrokerListAndClient(brokerList []string, httpClient *http.Client) (*Connection, error) {
 	clientConfig := &ClientConfig{
 		BrokerList: brokerList,
 	}
-	return NewWithConfig(clientConfig)
+	return NewWithConfigAndClient(clientConfig, httpClient)
 }
 
 // NewFromZookeeper create a new Pinot connection through Pinot Zookeeper.
 func NewFromZookeeper(zkPath []string, zkPathPrefix string, pinotCluster string) (*Connection, error) {
+	return NewFromZookeeperAndClient(zkPath, zkPathPrefix, pinotCluster, http.DefaultClient)
+}
+
+// NewFromZookeeperAndClient create a new Pinot connection through Pinot Zookeeper and http client.
+func NewFromZookeeperAndClient(zkPath []string, zkPathPrefix string, pinotCluster string, httpClient *http.Client) (*Connection, error) {
 	clientConfig := &ClientConfig{
 		ZkConfig: &ZookeeperConfig{
 			ZookeeperPath:     zkPath,
@@ -27,23 +37,33 @@ func NewFromZookeeper(zkPath []string, zkPathPrefix string, pinotCluster string)
 			SessionTimeoutSec: defaultZkSessionTimeoutSec,
 		},
 	}
-	return NewWithConfig(clientConfig)
+	return NewWithConfigAndClient(clientConfig, httpClient)
 }
 
 // NewFromController creates a new Pinot connection that periodically fetches available brokers via the Controller API.
 func NewFromController(controllerAddress string) (*Connection, error) {
+	return NewFromControllerAndClient(controllerAddress, http.DefaultClient)
+}
+
+// NewFromControllerAndClient creates a new Pinot connection that periodically fetches available brokers via the Controller API.
+func NewFromControllerAndClient(controllerAddress string, httpClient *http.Client) (*Connection, error) {
 	clientConfig := &ClientConfig{
 		ControllerConfig: &ControllerConfig{
 			ControllerAddress: controllerAddress,
 		},
 	}
-	return NewWithConfig(clientConfig)
+	return NewWithConfigAndClient(clientConfig, httpClient)
 }
 
 // NewWithConfig create a new Pinot connection.
 func NewWithConfig(config *ClientConfig) (*Connection, error) {
+	return NewWithConfigAndClient(config, http.DefaultClient)
+}
+
+// NewWithConfigAndClient create a new Pinot connection with pre-created http client.
+func NewWithConfigAndClient(config *ClientConfig, httpClient *http.Client) (*Connection, error) {
 	transport := &jsonAsyncHTTPClientTransport{
-		client: http.DefaultClient,
+		client: httpClient,
 		header: config.ExtraHTTPHeader,
 	}
 
