@@ -33,7 +33,11 @@ func (t jsonAsyncHTTPClientTransport) execute(brokerAddress string, query *Reque
 	if query.trace {
 		requestJSON["trace"] = "true"
 	}
-	jsonValue, _ := json.Marshal(requestJSON)
+	jsonValue, err := json.Marshal(requestJSON)
+	if err != nil {
+		log.Error("Unable to marshal request to JSON. ", err)
+		return nil, err
+	}
 	req, err := createHTTPRequest(url, jsonValue, t.header)
 	if err != nil {
 		return nil, err
@@ -43,7 +47,11 @@ func (t jsonAsyncHTTPClientTransport) execute(brokerAddress string, query *Reque
 		log.Error("Got exceptions during sending request. ", err)
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Error("Got exceptions during closing response body. ", err)
+		}
+	}()
 	if resp.StatusCode == http.StatusOK {
 		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
@@ -51,7 +59,7 @@ func (t jsonAsyncHTTPClientTransport) execute(brokerAddress string, query *Reque
 			return nil, err
 		}
 		var brokerResponse BrokerResponse
-		if err = decodeJsonWithNumber(bodyBytes, &brokerResponse); err != nil {
+		if err = decodeJSONWithNumber(bodyBytes, &brokerResponse); err != nil {
 			log.Error("Unable to unmarshal json response to a brokerResponse structure. ", err)
 			return nil, err
 		}

@@ -40,6 +40,7 @@ func (s *tableAwareBrokerSelector) selectBroker(table string) (string, error) {
 			return "", fmt.Errorf("No available broker found for table: %s", table)
 		}
 	}
+	// #nosec G404
 	return brokerList[rand.Intn(len(brokerList))], nil
 }
 

@@ -1,3 +1,4 @@
+// Package pinot provides a client for Pinot, a real-time distributed OLAP datastore.
 package pinot
 
 type brokerSelector interface {

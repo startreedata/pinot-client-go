@@ -33,7 +33,7 @@ func TestExtractBrokerHostPort(t *testing.T) {
 func TestErrorInit(t *testing.T) {
 	selector := &dynamicBrokerSelector{
 		tableAwareBrokerSelector: tableAwareBrokerSelector{
-			tableBrokerMap: map[string][]string{"myTable": []string{}},
+			tableBrokerMap: map[string][]string{"myTable": {}},
 		},
 		zkConfig: &ZookeeperConfig{
 			ZookeeperPath: []string{},
@@ -46,7 +46,7 @@ func TestErrorInit(t *testing.T) {
 func TestErrorRefreshExternalView(t *testing.T) {
 	selector := &dynamicBrokerSelector{
 		tableAwareBrokerSelector: tableAwareBrokerSelector{
-			tableBrokerMap: map[string][]string{"myTable": []string{}},
+			tableBrokerMap: map[string][]string{"myTable": {}},
 		},
 		zkConfig: &ZookeeperConfig{
 			ZookeeperPath: []string{},

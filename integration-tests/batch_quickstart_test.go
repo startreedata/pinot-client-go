@@ -52,7 +52,7 @@ func getPinotClientFromBroker() *pinot.Connection {
 	return pinotClient
 }
 
-func getCustomHttpClient() *http.Client {
+func getCustomHTTPClient() *http.Client {
 	httpClient := &http.Client{
 		Timeout: 15 * time.Second,
 		Transport: &http.Transport{
@@ -69,24 +69,24 @@ func getCustomHttpClient() *http.Client {
 	return httpClient
 }
 
-func getPinotClientFromZookeeperAndCustomHttpClient() *pinot.Connection {
-	pinotClient, err := pinot.NewFromZookeeperAndClient([]string{"localhost:" + zookeeperPort}, "", "QuickStartCluster", getCustomHttpClient())
+func getPinotClientFromZookeeperAndCustomHTTPClient() *pinot.Connection {
+	pinotClient, err := pinot.NewFromZookeeperAndClient([]string{"localhost:" + zookeeperPort}, "", "QuickStartCluster", getCustomHTTPClient())
 	if err != nil {
 		log.Fatalln(err)
 	}
 	return pinotClient
 }
 
-func getPinotClientFromControllerAndCustomHttpClient() *pinot.Connection {
-	pinotClient, err := pinot.NewFromControllerAndClient("localhost:"+controllerPort, getCustomHttpClient())
+func getPinotClientFromControllerAndCustomHTTPClient() *pinot.Connection {
+	pinotClient, err := pinot.NewFromControllerAndClient("localhost:"+controllerPort, getCustomHTTPClient())
 	if err != nil {
 		log.Fatalln(err)
 	}
 	return pinotClient
 }
 
-func getPinotClientFromBrokerAndCustomHttpClient() *pinot.Connection {
-	pinotClient, err := pinot.NewFromBrokerListAndClient([]string{"localhost:" + brokerPort}, getCustomHttpClient())
+func getPinotClientFromBrokerAndCustomHTTPClient() *pinot.Connection {
+	pinotClient, err := pinot.NewFromBrokerListAndClient([]string{"localhost:" + brokerPort}, getCustomHTTPClient())
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -101,9 +101,9 @@ func TestSendingQueriesToPinot(t *testing.T) {
 		getPinotClientFromZookeeper(),
 		getPinotClientFromController(),
 		getPinotClientFromBroker(),
-		getPinotClientFromZookeeperAndCustomHttpClient(),
-		getPinotClientFromControllerAndCustomHttpClient(),
-		getPinotClientFromBrokerAndCustomHttpClient(),
+		getPinotClientFromZookeeperAndCustomHTTPClient(),
+		getPinotClientFromControllerAndCustomHTTPClient(),
+		getPinotClientFromBrokerAndCustomHTTPClient(),
 	}
 
 	table := "baseballStats"

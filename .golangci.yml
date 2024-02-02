@@ -9,20 +9,21 @@ output:
 
 linters:
   enable:
-    - govet
-    - whitespace
-
-  disable:
-    - godox
-    - ineffassign
     - errcheck
+    - gofmt
+    - goimports
+    - gosec
+    - govet
+    - ineffassign
     - staticcheck
-    - gosimple
-    - stylecheck
-    - wsl
+    - typecheck
     - revive
+    - unused
+  disable:
+    - gochecknoinits
+    - gochecknoglobals
 
-linter-settings:
+linters-settings:
   govet:
     # report about shadowed variables
     check-shadowing: true
@@ -30,3 +31,43 @@ linter-settings:
     # enable or disable analyzers by name
     # run `go tool vet help` to see all analyzers
     enable-all: true
+  golint:
+    min-confidence: 0.8
+  gocritic:
+    enabled-checks:
+      - appendCombine
+      - argOrder
+      - badCond
+      - dupBranchBody
+      - dupCase
+      - dupSubExpr
+      - elseif
+      - hugeParam
+      - initClause
+      - rangeValCopy
+      - sloppyLen
+      - typeSwitchVar
+      - underef
+      - unlambda
+      - unslice
+  gofmt:
+    simplify: true
+  goimports:
+    local-prefixes: github.com/myorg/mypackage
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+
+issues:
+  exclude-use-default: false
+  exclude-rules:
+    - linters:
+        - govet
+      text: "composite literal uses unkeyed fields"
+    - linters:
+        - golint
+      text: "should have comment or be unexported"
+    - linters:
+        - staticcheck
+      text: "SA5001: should check returned error before deferring"
+

@@ -14,7 +14,7 @@ func TestExtractTableName(t *testing.T) {
 
 func TestSelectBroker(t *testing.T) {
 	selector := &tableAwareBrokerSelector{
-		tableBrokerMap: map[string][]string{"myTable": []string{"localhost:8000"}},
+		tableBrokerMap: map[string][]string{"myTable": {"localhost:8000"}},
 		allBrokerList:  []string{"localhost:8000"},
 	}
 	broker, err := selector.selectBroker("")
@@ -29,7 +29,7 @@ func TestSelectBroker(t *testing.T) {
 
 func TestErrorSelectBroker(t *testing.T) {
 	emptySelector := &tableAwareBrokerSelector{
-		tableBrokerMap: map[string][]string{"myTable": []string{}},
+		tableBrokerMap: map[string][]string{"myTable": {}},
 	}
 	_, err := emptySelector.selectBroker("")
 	assert.NotNil(t, err)

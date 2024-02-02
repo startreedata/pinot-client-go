@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"reflect"
 	"strings"
@@ -18,7 +17,7 @@ type MockHTTPClientSuccess struct {
 	statusCode int
 }
 
-func (m *MockHTTPClientSuccess) Do(req *http.Request) (*http.Response, error) {
+func (m *MockHTTPClientSuccess) Do(_ *http.Request) (*http.Response, error) {
 	r := &http.Response{}
 	r.StatusCode = m.statusCode
 	r.Body = m.body
@@ -29,7 +28,7 @@ type MockHTTPClientFailure struct {
 	err error
 }
 
-func (m *MockHTTPClientFailure) Do(req *http.Request) (*http.Response, error) {
+func (m *MockHTTPClientFailure) Do(_ *http.Request) (*http.Response, error) {
 	return &http.Response{}, m.err
 }
 
@@ -40,13 +39,13 @@ func TestControllerBasedBrokerSelectorInit(t *testing.T) {
 		},
 		client: &MockHTTPClientSuccess{
 			statusCode: 200,
-			body:       ioutil.NopCloser(strings.NewReader("{}")),
+			body:       io.NopCloser(strings.NewReader("{}")),
 		},
 	}
 	err := s.init()
 	assert.Nil(t, err)
 	assert.Equal(t, s.config.UpdateFreqMs, 1000)
-	assert.Equal(t, s.controllerAPIReqUrl, "http://localhost:9000/v2/brokers/tables?state=ONLINE")
+	assert.Equal(t, s.controllerAPIReqURL, "http://localhost:9000/v2/brokers/tables?state=ONLINE")
 	assert.ElementsMatch(t, s.allBrokerList, []string{})
 }
 
@@ -62,23 +61,36 @@ func TestControllerBasedBrokerSelectorInitError(t *testing.T) {
 	err := s.init()
 	assert.NotNil(t, err)
 	assert.True(t, strings.Contains(err.Error(), "http client error"))
+
+	s = &controllerBasedSelector{
+		config: &ControllerConfig{
+			ControllerAddress: "invalidControllerURL://host:9000",
+		},
+		client: &MockHTTPClientFailure{
+			err: errors.New("http client error"),
+		},
+	}
+	err = s.init()
+	assert.NotNil(t, err)
+	assert.True(t, strings.Contains(err.Error(), "Unsupported controller URL scheme"))
 }
 
 func TestGetControllerRequestUrl(t *testing.T) {
-	u, err := getControllerRequestUrl("localhost:9000")
+	u, err := getControllerRequestURL("localhost:9000")
 	assert.Nil(t, err)
 	assert.Equal(t, "http://localhost:9000/v2/brokers/tables?state=ONLINE", u)
 
-	u, err = getControllerRequestUrl("https://host:1234")
+	u, err = getControllerRequestURL("https://host:1234")
 	assert.Nil(t, err)
 	assert.Equal(t, "https://host:1234/v2/brokers/tables?state=ONLINE", u)
 
-	u, err = getControllerRequestUrl("http://host:1234")
+	u, err = getControllerRequestURL("http://host:1234")
 	assert.Nil(t, err)
 	assert.Equal(t, "http://host:1234/v2/brokers/tables?state=ONLINE", u)
 
-	u, err = getControllerRequestUrl("smb://nope:1234")
+	u, err = getControllerRequestURL("smb://nope:1234")
 	assert.NotNil(t, err)
+	assert.Equal(t, "", u)
 	assert.True(t, strings.Contains(err.Error(), "Unsupported controller URL scheme: smb"))
 }
 
@@ -105,7 +117,7 @@ func TestUpdateBrokerData(t *testing.T) {
 		},
 		client: &MockHTTPClientSuccess{
 			statusCode: 200,
-			body: ioutil.NopCloser(
+			body: io.NopCloser(
 				strings.NewReader(
 					`{"baseballStats":[{"port":8000,"host":"172.17.0.2","instanceName":"Broker_172.17.0.2_8000"}]}`,
 				),
@@ -158,7 +170,7 @@ func TestUpdateBrokerDataDecodeError(t *testing.T) {
 		},
 		client: &MockHTTPClientSuccess{
 			statusCode: 200,
-			body:       ioutil.NopCloser(strings.NewReader("{not a valid json")),
+			body:       io.NopCloser(strings.NewReader("{not a valid json")),
 		},
 	}
 	err := s.updateBrokerData()
@@ -168,7 +180,7 @@ func TestUpdateBrokerDataDecodeError(t *testing.T) {
 
 type errReader int
 
-func (errReader) Read(p []byte) (n int, err error) {
+func (errReader) Read(_ []byte) (n int, err error) {
 	return 0, errors.New("test read error")
 }
 
@@ -198,7 +210,7 @@ func TestUpdateBrokerDataUnexpectedHTTPStatus(t *testing.T) {
 		},
 		client: &MockHTTPClientSuccess{
 			statusCode: 500,
-			body:       ioutil.NopCloser(strings.NewReader("{}")),
+			body:       io.NopCloser(strings.NewReader("{}")),
 		},
 	}
 	err := s.updateBrokerData()
