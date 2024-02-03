@@ -55,15 +55,6 @@ go build ./examples/json-batch-quickstart
 ./json-batch-quickstart
 ```
 
-## Pinot Live Demo cluster
-
-Build and run the example application to query from Pinot Batch Quickstart
-
-```
-go build ./examples/pinot-live-demo
-./pinot-live-demo
-```
-
 # Usage
 
 ## Create a Pinot Connection
@@ -174,6 +165,27 @@ if err != nil {
     log.Error(err)
 }
 log.Infof("Query Stats: response time - %d ms, scanned docs - %d, total docs - %d", brokerResp.TimeUsedMs, brokerResp.NumDocsScanned, brokerResp.TotalDocs)
+```
+
+## Query Pinot with Multi-Stage Engine
+
+Please see this [example](https://github.com/startreedata/pinot-client-go/blob/master/examples/multistage-quickstart/main.go) for your reference.
+
+How to run it:
+
+```
+go build ./examples/multistage-quickstart
+./multistage-quickstart
+```
+
+Code snippet:
+
+```
+pinotClient, err := pinot.NewFromZookeeper([]string{"localhost:2123"}, "", "QuickStartCluster")
+if err != nil {
+	log.Error(err)
+}
+pinotClient.UseMultistageEngine(true)
 ```
 
 ## Response Format

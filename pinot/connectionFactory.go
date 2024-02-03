@@ -81,6 +81,7 @@ func NewWithConfigAndClient(config *ClientConfig, httpClient *http.Client) (*Con
 			brokerSelector: &dynamicBrokerSelector{
 				zkConfig: config.ZkConfig,
 			},
+			useMultistageEngine: config.UseMultistageEngine,
 		}
 	}
 	if config.BrokerList != nil && len(config.BrokerList) > 0 {
@@ -89,6 +90,7 @@ func NewWithConfigAndClient(config *ClientConfig, httpClient *http.Client) (*Con
 			brokerSelector: &simpleBrokerSelector{
 				brokerList: config.BrokerList,
 			},
+			useMultistageEngine: config.UseMultistageEngine,
 		}
 	}
 	if config.ControllerConfig != nil {
@@ -98,6 +100,7 @@ func NewWithConfigAndClient(config *ClientConfig, httpClient *http.Client) (*Con
 				config: config.ControllerConfig,
 				client: http.DefaultClient,
 			},
+			useMultistageEngine: config.UseMultistageEngine,
 		}
 	}
 	if conn != nil {

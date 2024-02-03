@@ -6,9 +6,15 @@ import (
 
 // Connection to Pinot, normally created through calls to the {@link ConnectionFactory}.
 type Connection struct {
-	transport      clientTransport
-	brokerSelector brokerSelector
-	trace          bool
+	transport           clientTransport
+	brokerSelector      brokerSelector
+	trace               bool
+	useMultistageEngine bool
+}
+
+// UseMultistageEngine for the connection
+func (c *Connection) UseMultistageEngine(useMultistageEngine bool) {
+	c.useMultistageEngine = useMultistageEngine
 }
 
 // ExecuteSQL for a given table
@@ -19,9 +25,10 @@ func (c *Connection) ExecuteSQL(table string, query string) (*BrokerResponse, er
 		return nil, err
 	}
 	brokerResp, err := c.transport.execute(brokerAddress, &Request{
-		queryFormat: "sql",
-		query:       query,
-		trace:       c.trace,
+		queryFormat:         "sql",
+		query:               query,
+		trace:               c.trace,
+		useMultistageEngine: c.useMultistageEngine,
 	})
 	if err != nil {
 		log.Errorf("Caught exception to execute SQL query %s, Error: %v\n", query, err)

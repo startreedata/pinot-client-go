@@ -14,6 +14,8 @@ type ClientConfig struct {
 	BrokerList []string
 	// HTTP request timeout in your broker query for API requests
 	HTTPTimeout time.Duration
+	// UseMultistageEngine is a flag to enable multistage query execution engine
+	UseMultistageEngine bool
 }
 
 // ZookeeperConfig describes how to config Pinot Zookeeper connection

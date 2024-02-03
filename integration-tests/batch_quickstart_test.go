@@ -28,27 +28,30 @@ var (
 	brokerPort     = getEnv("BROKER_PORT", "8000")
 )
 
-func getPinotClientFromZookeeper() *pinot.Connection {
+func getPinotClientFromZookeeper(useMultistageEngine bool) *pinot.Connection {
 	pinotClient, err := pinot.NewFromZookeeper([]string{"localhost:" + zookeeperPort}, "", "QuickStartCluster")
 	if err != nil {
 		log.Fatalln(err)
 	}
+	pinotClient.UseMultistageEngine(useMultistageEngine)
 	return pinotClient
 }
 
-func getPinotClientFromController() *pinot.Connection {
+func getPinotClientFromController(useMultistageEngine bool) *pinot.Connection {
 	pinotClient, err := pinot.NewFromController("localhost:" + controllerPort)
 	if err != nil {
 		log.Fatalln(err)
 	}
+	pinotClient.UseMultistageEngine(useMultistageEngine)
 	return pinotClient
 }
 
-func getPinotClientFromBroker() *pinot.Connection {
+func getPinotClientFromBroker(useMultistageEngine bool) *pinot.Connection {
 	pinotClient, err := pinot.NewFromBrokerList([]string{"localhost:" + brokerPort})
 	if err != nil {
 		log.Fatalln(err)
 	}
+	pinotClient.UseMultistageEngine(useMultistageEngine)
 	return pinotClient
 }
 
@@ -69,27 +72,56 @@ func getCustomHTTPClient() *http.Client {
 	return httpClient
 }
 
-func getPinotClientFromZookeeperAndCustomHTTPClient() *pinot.Connection {
+func getPinotClientFromZookeeperAndCustomHTTPClient(useMultistageEngine bool) *pinot.Connection {
 	pinotClient, err := pinot.NewFromZookeeperAndClient([]string{"localhost:" + zookeeperPort}, "", "QuickStartCluster", getCustomHTTPClient())
 	if err != nil {
 		log.Fatalln(err)
 	}
+	pinotClient.UseMultistageEngine(useMultistageEngine)
 	return pinotClient
 }
 
-func getPinotClientFromControllerAndCustomHTTPClient() *pinot.Connection {
+func getPinotClientFromControllerAndCustomHTTPClient(useMultistageEngine bool) *pinot.Connection {
 	pinotClient, err := pinot.NewFromControllerAndClient("localhost:"+controllerPort, getCustomHTTPClient())
 	if err != nil {
 		log.Fatalln(err)
 	}
+	pinotClient.UseMultistageEngine(useMultistageEngine)
 	return pinotClient
 }
 
-func getPinotClientFromBrokerAndCustomHTTPClient() *pinot.Connection {
+func getPinotClientFromBrokerAndCustomHTTPClient(useMultistageEngine bool) *pinot.Connection {
 	pinotClient, err := pinot.NewFromBrokerListAndClient([]string{"localhost:" + brokerPort}, getCustomHTTPClient())
 	if err != nil {
 		log.Fatalln(err)
 	}
+	pinotClient.UseMultistageEngine(useMultistageEngine)
+	return pinotClient
+}
+
+func getPinotClientFromConfig(useMultistageEngine bool) *pinot.Connection {
+	pinotClient, err := pinot.NewWithConfig(&pinot.ClientConfig{
+		BrokerList:      []string{"localhost:" + brokerPort},
+		HTTPTimeout:     1500 * time.Millisecond,
+		ExtraHTTPHeader: map[string]string{},
+	})
+	if err != nil {
+		log.Fatalln(err)
+	}
+	pinotClient.UseMultistageEngine(useMultistageEngine)
+	return pinotClient
+}
+
+func getPinotClientFromConfigAndCustomHTTPClient(useMultistageEngine bool) *pinot.Connection {
+	pinotClient, err := pinot.NewWithConfigAndClient(&pinot.ClientConfig{
+		BrokerList:      []string{"localhost:" + brokerPort},
+		HTTPTimeout:     1500 * time.Millisecond,
+		ExtraHTTPHeader: map[string]string{},
+	}, getCustomHTTPClient())
+	if err != nil {
+		log.Fatalln(err)
+	}
+	pinotClient.UseMultistageEngine(useMultistageEngine)
 	return pinotClient
 }
 
@@ -98,12 +130,23 @@ func getPinotClientFromBrokerAndCustomHTTPClient() *pinot.Connection {
 // You can change the ports by setting the environment variables ZOOKEEPER_PORT, CONTROLLER_PORT, and BROKER_PORT.
 func TestSendingQueriesToPinot(t *testing.T) {
 	pinotClients := []*pinot.Connection{
-		getPinotClientFromZookeeper(),
-		getPinotClientFromController(),
-		getPinotClientFromBroker(),
-		getPinotClientFromZookeeperAndCustomHTTPClient(),
-		getPinotClientFromControllerAndCustomHTTPClient(),
-		getPinotClientFromBrokerAndCustomHTTPClient(),
+		getPinotClientFromZookeeper(false),
+		getPinotClientFromController(false),
+		getPinotClientFromBroker(false),
+		getPinotClientFromConfig(false),
+		getPinotClientFromZookeeperAndCustomHTTPClient(false),
+		getPinotClientFromControllerAndCustomHTTPClient(false),
+		getPinotClientFromBrokerAndCustomHTTPClient(false),
+		getPinotClientFromConfigAndCustomHTTPClient(false),
+
+		getPinotClientFromZookeeper(true),
+		getPinotClientFromController(true),
+		getPinotClientFromBroker(true),
+		getPinotClientFromConfig(true),
+		getPinotClientFromZookeeperAndCustomHTTPClient(true),
+		getPinotClientFromControllerAndCustomHTTPClient(true),
+		getPinotClientFromBrokerAndCustomHTTPClient(true),
+		getPinotClientFromConfigAndCustomHTTPClient(true),
 	}
 
 	table := "baseballStats"
@@ -113,7 +156,7 @@ func TestSendingQueriesToPinot(t *testing.T) {
 
 	log.Printf("Querying SQL")
 	for _, query := range pinotQueries {
-		for i := 0; i < 100; i++ {
+		for i := 0; i < 200; i++ {
 			log.Printf("Trying to query Pinot: %v\n", query)
 			brokerResp, err := pinotClients[i%len(pinotClients)].ExecuteSQL(table, query)
 			assert.Nil(t, err)
