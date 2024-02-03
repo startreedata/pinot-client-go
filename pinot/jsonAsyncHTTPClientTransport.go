@@ -27,8 +27,18 @@ func (t jsonAsyncHTTPClientTransport) execute(brokerAddress string, query *Reque
 	url := fmt.Sprintf(getQueryTemplate(query.queryFormat, brokerAddress), brokerAddress)
 	requestJSON := map[string]string{}
 	requestJSON[query.queryFormat] = query.query
+	queryOptions := ""
 	if query.queryFormat == "sql" {
-		requestJSON["queryOptions"] = "groupByMode=sql;responseFormat=sql"
+		queryOptions = "groupByMode=sql;responseFormat=sql"
+	}
+	if query.useMultistageEngine {
+		if queryOptions != "" {
+			queryOptions += ";"
+		}
+		queryOptions += "useMultistageEngine=true"
+	}
+	if queryOptions != "" {
+		requestJSON["queryOptions"] = queryOptions
 	}
 	if query.trace {
 		requestJSON["trace"] = "true"

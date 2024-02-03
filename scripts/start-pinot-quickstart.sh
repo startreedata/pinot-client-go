@@ -15,17 +15,29 @@ if [ -z "${PINOT_HOME}" ]; then
   PINOT_HOME="/tmp/pinot"
 fi
 
+# Set the broker port
+if [ -z "${BROKER_PORT_FORWARD}" ]; then
+  echo "BROKER_PORT_FORWARD is not set. Using default port 8000"
+  BROKER_PORT_FORWARD="8000"
+fi
+
 # Create the destination directory
 mkdir -p "${PINOT_HOME}"
 
-# Download the Pinot package
-curl -L "${DOWNLOAD_URL}" -o "${PINOT_HOME}/apache-pinot-${PINOT_VERSION}-bin.tar.gz"
+# Check if the directory exists
+if [ -d "${PINOT_HOME}/apache-pinot-${PINOT_VERSION}-bin" ]; then
+    echo "Pinot package already exists in ${PINOT_HOME}/apache-pinot-${PINOT_VERSION}-bin"
+else
+    # Download the Pinot package
+    curl -L "${DOWNLOAD_URL}" -o "${PINOT_HOME}/apache-pinot-${PINOT_VERSION}-bin.tar.gz"
 
-# Extract the downloaded package
-tar -xzf "${PINOT_HOME}/apache-pinot-${PINOT_VERSION}-bin.tar.gz" -C "${PINOT_HOME}"
+    # Extract the downloaded package
+    tar -xzf "${PINOT_HOME}/apache-pinot-${PINOT_VERSION}-bin.tar.gz" -C "${PINOT_HOME}"
 
-# Remove the downloaded package
-rm "${PINOT_HOME}/apache-pinot-${PINOT_VERSION}-bin.tar.gz"
+    # Remove the downloaded package
+    rm "${PINOT_HOME}/apache-pinot-${PINOT_VERSION}-bin.tar.gz"
+fi
+
 
 # Start the Pinot cluster
 ${PINOT_HOME}/apache-pinot-${PINOT_VERSION}-bin/bin/pinot-admin.sh QuickStart -type MULTI_STAGE &
@@ -40,7 +52,7 @@ jps -lvm
 
 echo "Ensure Pinot cluster started correctly"
 
-# Wait at most 5 minutes to reach the desired state
+# Wait at most 10 minutes to reach the desired state
 for i in $(seq 1 150)
 do
   SUCCEED_TABLE=0
@@ -64,11 +76,11 @@ do
   if [ "${SUCCEED_TABLE}" -eq 6 ]; then
     break
   fi
-  sleep 2
+  sleep 4
 done
 
 if [ "${SUCCEED_TABLE}" -lt 6 ]; then
-  echo 'Quickstart failed: Cannot confirmed count-star result from quickstart table in 5 minutes'
+  echo 'Quickstart failed: Cannot confirmed count-star result from quickstart table in 10 minutes'
   exit 1
 fi
 echo "Pinot cluster started correctly"
