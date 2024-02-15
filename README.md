@@ -15,20 +15,20 @@ Applications can use this golang client library to query Apache Pinot.
 
 Please follow this [Pinot Quickstart](https://docs.pinot.apache.org/basics/getting-started/running-pinot-locally) link to install and start Pinot batch quickstart locally.
 
-```
+```sh
 bin/quick-start-batch.sh
 ```
 
 Check out Client library Github Repo
 
-```
+```sh
 git clone git@github.com:startreedata/pinot-client-go.git
 cd pinot-client-go
 ```
 
 Build and run the example application to query from Pinot Batch Quickstart
 
-```
+```sh
 go build ./examples/batch-quickstart
 ./batch-quickstart
 ```
@@ -37,20 +37,20 @@ go build ./examples/batch-quickstart
 
 Please follow this [Pinot Quickstart](https://docs.pinot.apache.org/basics/getting-started/running-pinot-locally) link to install and start Pinot json batch quickstart locally.
 
-```
+```sh
 bin/quick-start-json-index-batch.sh
 ```
 
 Check out Client library Github Repo
 
-```
+```sh
 git clone git@github.com:startreedata/pinot-client-go.git
 cd pinot-client-go
 ```
 
 Build and run the example application to query from Pinot Json Batch Quickstart
 
-```
+```sh
 go build ./examples/json-batch-quickstart
 ./json-batch-quickstart
 ```
@@ -63,13 +63,13 @@ Pinot client could be initialized through:
 
 1. Zookeeper Path.
 
-```
+```go
 pinotClient, err := pinot.NewFromZookeeper([]string{"localhost:2123"}, "", "QuickStartCluster")
 ```
 
 2. Controller address.
 
-```
+```go
 pinotClient, err := pinot.NewFromController("localhost:9000")
 ```
 
@@ -80,14 +80,14 @@ When the controller-based broker selector is used, the client will periodically 
 - For HTTP
   Default scheme is HTTP if not specified.
 
-```
+```go
 pinotClient, err := pinot.NewFromBrokerList([]string{"localhost:8000"})
 ```
 
 - For HTTPS
   Scheme is required to be part of the URI.
 
-```
+```go
 pinotClient, err := pinot.NewFromBrokerList([]string{"https://pinot-broker.pinot.live"})
 ```
 
@@ -95,7 +95,7 @@ pinotClient, err := pinot.NewFromBrokerList([]string{"https://pinot-broker.pinot
 
 Via Zookeeper path:
 
-```
+```go
 pinotClient, err := pinot.NewWithConfig(&pinot.ClientConfig{
 	ZkConfig: &pinot.ZookeeperConfig{
 		ZookeeperPath:     zkPath,
@@ -111,7 +111,7 @@ pinotClient, err := pinot.NewWithConfig(&pinot.ClientConfig{
 
 Via controller address:
 
-```
+```go
 pinotClient, err := pinot.NewWithConfig(&pinot.ClientConfig{
 	ControllerConfig: &pinot.ControllerConfig{
 		ControllerAddress: "localhost:9000",
@@ -133,7 +133,7 @@ pinotClient, err := pinot.NewWithConfig(&pinot.ClientConfig{
 
 By Default this client uses golang's default http timeout, which is "No TImeout". If you want pinot queries to timeout within given time, add `HTTPTimeout` in `ClientConfig`
 
-```
+```go
 pinotClient, err := pinot.NewWithConfig(&pinot.ClientConfig{
 	ZkConfig: &pinot.ZookeeperConfig{
 		ZookeeperPath:     zkPath,
@@ -155,7 +155,7 @@ Please see this [example](https://github.com/startreedata/pinot-client-go/blob/m
 
 Code snippet:
 
-```
+```go
 pinotClient, err := pinot.NewFromZookeeper([]string{"localhost:2123"}, "", "QuickStartCluster")
 if err != nil {
     log.Error(err)
@@ -173,14 +173,14 @@ Please see this [example](https://github.com/startreedata/pinot-client-go/blob/m
 
 How to run it:
 
-```
+```sh
 go build ./examples/multistage-quickstart
 ./multistage-quickstart
 ```
 
 Code snippet:
 
-```
+```go
 pinotClient, err := pinot.NewFromZookeeper([]string{"localhost:2123"}, "", "QuickStartCluster")
 if err != nil {
 	log.Error(err)
@@ -192,7 +192,7 @@ pinotClient.UseMultistageEngine(true)
 
 Query Response is defined as the struct of following:
 
-```
+```go
 type BrokerResponse struct {
 	AggregationResults          []*AggregationResult `json:"aggregationResults,omitempty"`
 	SelectionResults            *SelectionResults    `json:"SelectionResults,omitempty"`
@@ -220,7 +220,7 @@ Note that `AggregationResults` and `SelectionResults` are holders for PQL querie
 Meanwhile `ResultTable` is the holder for SQL queries.
 `ResultTable` is defined as:
 
-```
+```go
 // ResultTable is a ResultTable
 type ResultTable struct {
 	DataSchema RespSchema      `json:"dataSchema"`
@@ -230,7 +230,7 @@ type ResultTable struct {
 
 `RespSchema` is defined as:
 
-```
+```go
 // RespSchema is response schema
 type RespSchema struct {
 	ColumnDataTypes []string `json:"columnDataTypes"`
@@ -240,7 +240,7 @@ type RespSchema struct {
 
 There are multiple functions defined for `ResultTable`, like:
 
-```
+```go
 func (r ResultTable) GetRowCount() int
 func (r ResultTable) GetColumnCount() int
 func (r ResultTable) GetColumnName(columnIndex int) string
