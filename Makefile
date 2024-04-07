@@ -14,6 +14,7 @@ install-deps:
 	go get github.com/go-zookeeper/zk
 	go get github.com/sirupsen/logrus
 	go get github.com/stretchr/testify/assert
+	go get github.com/stretchr/testify/mock
 
 .PHONY: setup
 setup: install-covertools install-deps
