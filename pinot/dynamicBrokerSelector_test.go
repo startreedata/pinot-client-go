@@ -87,7 +87,7 @@ func TestErrorExternalViewUpdate(t *testing.T) {
 func TestMockReadZNode(t *testing.T) {
 	evBytes := []byte(`{"id":"brokerResource","simpleFields":{"BATCH_MESSAGE_MODE":"false","BUCKET_SIZE":"0","IDEAL_STATE_MODE":"CUSTOMIZED","NUM_PARTITIONS":"1","REBALANCE_MODE":"CUSTOMIZED","REPLICAS":"0","STATE_MODEL_DEF_REF":"BrokerResourceOnlineOfflineStateModel","STATE_MODEL_FACTORY_NAME":"DEFAULT"},"mapFields":{"baseballStats_OFFLINE":{"Broker_127.0.0.1_8000":"ONLINE", "Broker_127.0.0.1_9000":"ONLINE"}},"listFields":{}}`)
 	selector := &dynamicBrokerSelector{
-		readZNode: func(path string) ([]byte, error) {
+		readZNode: func(_ string) ([]byte, error) {
 			return evBytes, nil
 		},
 	}
@@ -115,7 +115,7 @@ func TestMockReadZNode(t *testing.T) {
 	evBytes = []byte(`abc`)
 	err = selector.refreshExternalView()
 	assert.NotNil(t, err)
-	selector.readZNode = func(path string) ([]byte, error) {
+	selector.readZNode = func(_ string) ([]byte, error) {
 		return nil, fmt.Errorf("erroReadZNode")
 	}
 	err = selector.refreshExternalView()
@@ -126,7 +126,7 @@ func TestMockUpdateEvent(t *testing.T) {
 	evBytes := []byte(`{"id":"brokerResource","simpleFields":{"BATCH_MESSAGE_MODE":"false","BUCKET_SIZE":"0","IDEAL_STATE_MODE":"CUSTOMIZED","NUM_PARTITIONS":"1","REBALANCE_MODE":"CUSTOMIZED","REPLICAS":"0","STATE_MODEL_DEF_REF":"BrokerResourceOnlineOfflineStateModel","STATE_MODEL_FACTORY_NAME":"DEFAULT"},"mapFields":{"baseballStats_OFFLINE":{"Broker_127.0.0.1_8000":"ONLINE", "Broker_127.0.0.1_9000":"ONLINE"}},"listFields":{}}`)
 	ch := make(chan zk.Event)
 	selector := &dynamicBrokerSelector{
-		readZNode: func(path string) ([]byte, error) {
+		readZNode: func(_ string) ([]byte, error) {
 			return evBytes, nil
 		},
 		externalViewZnodeWatch: ch,
@@ -162,7 +162,7 @@ func TestMockUpdateEvent(t *testing.T) {
 	evBytes = []byte(`abc`)
 	err = selector.refreshExternalView()
 	assert.NotNil(t, err)
-	selector.readZNode = func(path string) ([]byte, error) {
+	selector.readZNode = func(_ string) ([]byte, error) {
 		return nil, fmt.Errorf("erroReadZNode")
 	}
 	err = selector.refreshExternalView()

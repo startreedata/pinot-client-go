@@ -24,7 +24,8 @@ linters:
     - gochecknoglobals
 
 linters-settings:
-  govet:
+  shadow:
+    enable: true
     # report about shadowed variables
     check-shadowing: true
 

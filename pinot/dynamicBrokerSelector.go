@@ -42,7 +42,7 @@ func (s *dynamicBrokerSelector) init() error {
 		log.Errorf("Failed to connect to zookeeper: %v\n", s.zkConfig.ZookeeperPath)
 		return err
 	}
-	s.readZNode = func(path string) ([]byte, error) {
+	s.readZNode = func(_ string) ([]byte, error) {
 		node, _, err2 := s.zkConn.Get(s.externalViewZkPath)
 		if err2 != nil {
 			log.Errorf("Failed to read zk: %s, ExternalView path: %s\n", s.zkConfig.ZookeeperPath, s.externalViewZkPath)

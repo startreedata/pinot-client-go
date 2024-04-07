@@ -54,7 +54,7 @@ func TestSendingSQLWithMockServer(t *testing.T) {
 }
 
 func TestSendingQueryWithErrorResponse(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	}))
 	defer ts.Close()
@@ -68,7 +68,7 @@ func TestSendingQueryWithErrorResponse(t *testing.T) {
 }
 
 func TestSendingQueryWithNonJsonResponse(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprintln(w, `ProcessingException`)
@@ -111,7 +111,7 @@ func TestConnectionWithControllerBasedBrokerSelector(t *testing.T) {
 }
 
 func TestSendingQueryWithTraceOpen(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		var request map[string]string
 		err := json.NewDecoder(r.Body).Decode(&request)
 		assert.Equal(t, request["trace"], "true")
@@ -130,7 +130,7 @@ func TestSendingQueryWithTraceOpen(t *testing.T) {
 }
 
 func TestSendingQueryWithTraceClose(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		var request map[string]string
 		err := json.NewDecoder(r.Body).Decode(&request)
 		assert.Nil(t, err)
