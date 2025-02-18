@@ -83,7 +83,7 @@ func formatArg(value interface{}) (string, error) {
 		// For pinot type - STRING - enclose in single quotes
 		return escapeStringValue(v), nil
 	case *big.Int, *big.Float:
-		// For pinot types - STRING, BIG_DECIMAL and BYTES - enclose in single quotes
+		// For pinot types - BIG_DECIMAL and BYTES - enclose in single quotes
 		return fmt.Sprintf("'%v'", v), nil
 	case []byte:
 		// For pinot type - BYTES - convert to Hex string and enclose in single quotes
