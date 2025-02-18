@@ -79,7 +79,10 @@ func formatQuery(queryPattern string, params []interface{}) (string, error) {
 
 func formatArg(value interface{}) (string, error) {
 	switch v := value.(type) {
-	case string, *big.Int, *big.Float:
+	case string:
+		// For pinot type - STRING - enclose in single quotes
+		return escapeStringValue(v), nil
+	case *big.Int, *big.Float:
 		// For pinot types - STRING, BIG_DECIMAL and BYTES - enclose in single quotes
 		return fmt.Sprintf("'%v'", v), nil
 	case []byte:
@@ -96,6 +99,10 @@ func formatArg(value interface{}) (string, error) {
 		// Throw error for unsupported types
 		return "", fmt.Errorf("unsupported type: %T", v)
 	}
+}
+
+func escapeStringValue(s string) string {
+	return fmt.Sprintf("'%s'", strings.ReplaceAll(s, "'", "''"))
 }
 
 // OpenTrace for the connection

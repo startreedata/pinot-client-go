@@ -186,6 +186,14 @@ func TestFormatQuery(t *testing.T) {
 	actualQuery, err = formatQuery(queryPattern, params)
 	assert.NotNil(t, err)
 	assert.Equal(t, expectedQuery, actualQuery)
+
+	// Test case 5: String parameter with single quote
+	queryPattern = "SELECT * FROM table WHERE name = ?"
+	params = []interface{}{"John's"}
+	expectedQuery = "SELECT * FROM table WHERE name = 'John''s'"
+	actualQuery, err = formatQuery(queryPattern, params)
+	assert.Nil(t, err)
+	assert.Equal(t, expectedQuery, actualQuery)
 }
 
 func TestFormatArg(t *testing.T) {
