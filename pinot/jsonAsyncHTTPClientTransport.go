@@ -37,6 +37,12 @@ func (t jsonAsyncHTTPClientTransport) execute(brokerAddress string, query *Reque
 		}
 		queryOptions += "useMultistageEngine=true"
 	}
+	if t.client.Timeout > 0 {
+		if queryOptions != "" {
+			queryOptions += ";"
+		}
+		queryOptions += fmt.Sprintf("timeoutMs=%d", t.client.Timeout.Milliseconds())
+	}
 	if queryOptions != "" {
 		requestJSON["queryOptions"] = queryOptions
 	}
