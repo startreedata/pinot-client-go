@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -58,4 +59,33 @@ func TestJsonAsyncHTTPClientTransport(t *testing.T) {
 	})
 	assert.NotNil(t, err)
 	assert.True(t, strings.HasPrefix(err.Error(), "Post "))
+}
+
+func TestBuildQueryOptions(t *testing.T) {
+	transport := &jsonAsyncHTTPClientTransport{
+		client: &http.Client{
+			Timeout: 10 * time.Second,
+		},
+		header: map[string]string{"a": "b"},
+	}
+	assert.Equal(t, "groupByMode=sql;responseFormat=sql;timeoutMs=10000", transport.buildQueryOptions(&Request{
+		queryFormat: "sql",
+		query:       "select * from baseballStats limit 10",
+	}))
+	assert.Equal(t, "groupByMode=sql;responseFormat=sql;useMultistageEngine=true;timeoutMs=10000", transport.buildQueryOptions(&Request{
+		queryFormat:         "sql",
+		query:               "select * from baseballStats limit 10",
+		useMultistageEngine: true,
+	}))
+
+	transport = &jsonAsyncHTTPClientTransport{
+		client: http.DefaultClient,
+		header: map[string]string{"a": "b"},
+	}
+
+	// should not have timeoutMs
+	assert.Equal(t, "", transport.buildQueryOptions(&Request{
+		queryFormat: "pql",
+		query:       "select * from baseballStats limit 10",
+	}))
 }
