@@ -93,7 +93,10 @@ func (r ResultTable) Get(rowIndex int, columnIndex int) interface{} {
 
 // GetString returns a ResultTable string entry given row index and column index
 func (r ResultTable) GetString(rowIndex int, columnIndex int) string {
-	return (r.Rows[rowIndex][columnIndex]).(string)
+	if col, ok := (r.Rows[rowIndex][columnIndex]).(string); ok {
+		return col
+	}
+	return ""
 }
 
 // GetInt returns a ResultTable int entry given row index and column index
