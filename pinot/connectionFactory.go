@@ -84,7 +84,7 @@ func NewWithConfigAndClient(config *ClientConfig, httpClient *http.Client) (*Con
 			useMultistageEngine: config.UseMultistageEngine,
 		}
 	}
-	if config.BrokerList != nil && len(config.BrokerList) > 0 {
+	if len(config.BrokerList) > 0 {
 		conn = &Connection{
 			transport: transport,
 			brokerSelector: &simpleBrokerSelector{
