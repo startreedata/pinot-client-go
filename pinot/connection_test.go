@@ -20,7 +20,8 @@ func TestSendingSQLWithMockServer(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		assert.Equal(t, "POST", r.Method)
 		assert.True(t, strings.HasSuffix(r.RequestURI, "/query/sql"))
-		fmt.Fprintln(w, "{\"resultTable\":{\"dataSchema\":{\"columnDataTypes\":[\"LONG\"],\"columnNames\":[\"cnt\"]},\"rows\":[[97889]]},\"exceptions\":[],\"numServersQueried\":1,\"numServersResponded\":1,\"numSegmentsQueried\":1,\"numSegmentsProcessed\":1,\"numSegmentsMatched\":1,\"numConsumingSegmentsQueried\":0,\"numDocsScanned\":97889,\"numEntriesScannedInFilter\":0,\"numEntriesScannedPostFilter\":0,\"numGroupsLimitReached\":false,\"totalDocs\":97889,\"timeUsedMs\":5,\"segmentStatistics\":[],\"traceInfo\":{},\"minConsumingFreshnessTimeMs\":0}")
+		_, err := fmt.Fprintln(w, "{\"resultTable\":{\"dataSchema\":{\"columnDataTypes\":[\"LONG\"],\"columnNames\":[\"cnt\"]},\"rows\":[[97889]]},\"exceptions\":[],\"numServersQueried\":1,\"numServersResponded\":1,\"numSegmentsQueried\":1,\"numSegmentsProcessed\":1,\"numSegmentsMatched\":1,\"numConsumingSegmentsQueried\":0,\"numDocsScanned\":97889,\"numEntriesScannedInFilter\":0,\"numEntriesScannedPostFilter\":0,\"numGroupsLimitReached\":false,\"totalDocs\":97889,\"timeUsedMs\":5,\"segmentStatistics\":[],\"traceInfo\":{},\"minConsumingFreshnessTimeMs\":0}")
+		assert.Nil(t, err)
 	}))
 	defer ts.Close()
 	pinotClient, err := NewFromBrokerList([]string{ts.URL})
@@ -73,7 +74,8 @@ func TestSendingQueryWithNonJsonResponse(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprintln(w, `ProcessingException`)
+		_, err := fmt.Fprintln(w, `ProcessingException`)
+		assert.Nil(t, err)
 	}))
 	defer ts.Close()
 	pinotClient, err := NewFromBrokerList([]string{ts.URL})
@@ -95,9 +97,11 @@ func TestConnectionWithControllerBasedBrokerSelector(t *testing.T) {
 		assert.True(t, strings.HasSuffix(r.RequestURI, "/v2/brokers/tables?state=ONLINE"))
 		if firstRequest {
 			firstRequest = false
-			fmt.Fprintln(w, `{"baseballStats":[{"port":8000,"host":"host1","instanceName":"Broker_host1_8000"}]}`)
+			_, err := fmt.Fprintln(w, `{"baseballStats":[{"port":8000,"host":"host1","instanceName":"Broker_host1_8000"}]}`)
+			assert.Nil(t, err)
 		} else {
-			fmt.Fprintln(w, `{"baseballStats":[{"port":8000,"host":"host2","instanceName":"Broker_host2_8000"}]}`)
+			_, err := fmt.Fprintln(w, `{"baseballStats":[{"port":8000,"host":"host2","instanceName":"Broker_host2_8000"}]}`)
+			assert.Nil(t, err)
 		}
 	}))
 	defer ts.Close()
@@ -275,7 +279,10 @@ type mockBrokerSelector struct {
 func (m *mockBrokerSelector) init() error { return nil }
 func (m *mockBrokerSelector) selectBroker(table string) (string, error) {
 	args := m.Called(table)
-	return args.Get(0).(string), args.Error(1)
+	if val, ok := args.Get(0).(string); ok {
+		return val, args.Error(1)
+	}
+	return "", args.Error(1)
 }
 
 type mockTransport struct {
@@ -284,7 +291,10 @@ type mockTransport struct {
 
 func (m *mockTransport) execute(brokerAddress string, query *Request) (*BrokerResponse, error) {
 	args := m.Called(brokerAddress, query)
-	return args.Get(0).(*BrokerResponse), args.Error(1)
+	if val, ok := args.Get(0).(*BrokerResponse); ok {
+		return val, args.Error(1)
+	}
+	return nil, args.Error(1)
 }
 
 func TestExecuteSQLWithParams(t *testing.T) {

@@ -1,6 +1,8 @@
 package pinot
 
 import (
+	"math"
+
 	"encoding/json"
 
 	log "github.com/sirupsen/logrus"
@@ -93,45 +95,69 @@ func (r ResultTable) Get(rowIndex int, columnIndex int) interface{} {
 
 // GetString returns a ResultTable string entry given row index and column index
 func (r ResultTable) GetString(rowIndex int, columnIndex int) string {
-	return (r.Rows[rowIndex][columnIndex]).(string)
+	if col, ok := (r.Rows[rowIndex][columnIndex]).(string); ok {
+		return col
+	}
+	log.Errorf("Error converting to string: %v", r.Rows[rowIndex][columnIndex])
+	return ""
 }
 
 // GetInt returns a ResultTable int entry given row index and column index
 func (r ResultTable) GetInt(rowIndex int, columnIndex int) int32 {
-	val, err := (r.Rows[rowIndex][columnIndex]).(json.Number).Int64()
-	if err != nil {
-		log.Errorf("Error converting to int: %v", err)
-		return 0
+	if col, ok := (r.Rows[rowIndex][columnIndex]).(json.Number); ok {
+		val, err := col.Int64()
+		if err != nil {
+			log.Errorf("Error converting to long: %v", err)
+			return 0
+		}
+		if val < int64(math.MinInt32) || val > int64(math.MaxInt32) {
+			log.Errorf("Error converting to int: %v", val)
+			return 0
+		}
+		return int32(val)
 	}
-	return int32(val)
+	log.Errorf("Error converting to json.Number: %v", r.Rows[rowIndex][columnIndex])
+	return 0
 }
 
 // GetLong returns a ResultTable long entry given row index and column index
 func (r ResultTable) GetLong(rowIndex int, columnIndex int) int64 {
-	val, err := (r.Rows[rowIndex][columnIndex]).(json.Number).Int64()
-	if err != nil {
-		log.Errorf("Error converting to long: %v", err)
-		return 0
+	if col, ok := (r.Rows[rowIndex][columnIndex]).(json.Number); ok {
+		val, err := col.Int64()
+		if err != nil {
+			log.Errorf("Error converting to long: %v", err)
+			return 0
+		}
+		return val
 	}
-	return val
+	log.Errorf("Error converting to json.Number: %v", r.Rows[rowIndex][columnIndex])
+	return 0
 }
 
 // GetFloat returns a ResultTable float entry given row index and column index
 func (r ResultTable) GetFloat(rowIndex int, columnIndex int) float32 {
-	val, err := (r.Rows[rowIndex][columnIndex]).(json.Number).Float64()
-	if err != nil {
-		log.Errorf("Error converting to float: %v", err)
-		return 0
+	if col, ok := (r.Rows[rowIndex][columnIndex]).(json.Number); ok {
+		val, err := col.Float64()
+		if err != nil {
+			log.Errorf("Error converting to float: %v", err)
+			return 0
+		}
+		return float32(val)
 	}
-	return float32(val)
+	log.Errorf("Error converting to json.Number: %v", r.Rows[rowIndex][columnIndex])
+	return 0
 }
 
 // GetDouble returns a ResultTable double entry given row index and column index
 func (r ResultTable) GetDouble(rowIndex int, columnIndex int) float64 {
-	val, err := (r.Rows[rowIndex][columnIndex]).(json.Number).Float64()
-	if err != nil {
-		log.Errorf("Error converting to double: %v", err)
-		return 0
+	if col, ok := (r.Rows[rowIndex][columnIndex]).(json.Number); ok {
+		val, err := col.Float64()
+		if err != nil {
+			log.Errorf("Error converting to double: %v", err)
+			return 0
+		}
+		return val
 	}
-	return val
+	log.Errorf("Error converting to json.Number: %v", r.Rows[rowIndex][columnIndex])
+	return 0
 }
