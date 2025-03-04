@@ -1,6 +1,8 @@
 package pinot
 
 import (
+	"math"
+
 	"encoding/json"
 
 	log "github.com/sirupsen/logrus"
@@ -105,7 +107,11 @@ func (r ResultTable) GetInt(rowIndex int, columnIndex int) int32 {
 	if col, ok := (r.Rows[rowIndex][columnIndex]).(json.Number); ok {
 		val, err := col.Int64()
 		if err != nil {
-			log.Errorf("Error converting to int: %v", err)
+			log.Errorf("Error converting to long: %v", err)
+			return 0
+		}
+		if val < int64(math.MinInt32) || val > int64(math.MaxInt32) {
+			log.Errorf("Error converting to int: %v", val)
 			return 0
 		}
 		return int32(val)
