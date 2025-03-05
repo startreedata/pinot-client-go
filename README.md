@@ -254,3 +254,23 @@ func (r ResultTable) GetDouble(rowIndex int, columnIndex int) float64
 ```
 
 Sample Usage is [here](https://github.com/startreedata/pinot-client-go/blob/master/examples/batch-quickstart/main.go#L58)
+
+# How to release
+
+## Tag and publish the release in Github
+
+Tag the version:
+
+```sh
+git tag -a v0.5.0 -m "v0.5.0"
+git push origin v0.5.0
+```
+
+Go to [Github Release](https://github.com/startreedata/pinot-client-go/releases) and create a new release with the tag, e.g. [Pinot Golang Client v0.5.0](https://github.com/startreedata/pinot-client-go/releases/tag/v0.5.0)
+
+## Publish the release in Go Modules
+
+The published Release will be available in [Go Modules](https://pkg.go.dev/github.com/startreedata/pinot-client-go).
+
+If not available, go to the corresponding new version page (https://pkg.go.dev/github.com/startreedata/pinot-client-go@v0.5.0) and click on the "Request New Version" button.
+
