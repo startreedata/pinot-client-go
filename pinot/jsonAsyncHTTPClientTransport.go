@@ -23,10 +23,7 @@ type jsonAsyncHTTPClientTransport struct {
 	header map[string]string
 }
 
-func (t jsonAsyncHTTPClientTransport) execute(brokerAddress string, query *Request) (*BrokerResponse, error) {
-	url := fmt.Sprintf(getQueryTemplate(query.queryFormat, brokerAddress), brokerAddress)
-	requestJSON := map[string]string{}
-	requestJSON[query.queryFormat] = query.query
+func (t jsonAsyncHTTPClientTransport) buildQueryOptions(query *Request) string {
 	queryOptions := ""
 	if query.queryFormat == "sql" {
 		queryOptions = "groupByMode=sql;responseFormat=sql"
@@ -37,6 +34,20 @@ func (t jsonAsyncHTTPClientTransport) execute(brokerAddress string, query *Reque
 		}
 		queryOptions += "useMultistageEngine=true"
 	}
+	if t.client.Timeout > 0 {
+		if queryOptions != "" {
+			queryOptions += ";"
+		}
+		queryOptions += fmt.Sprintf("timeoutMs=%d", t.client.Timeout.Milliseconds())
+	}
+	return queryOptions
+}
+
+func (t jsonAsyncHTTPClientTransport) execute(brokerAddress string, query *Request) (*BrokerResponse, error) {
+	url := fmt.Sprintf(getQueryTemplate(query.queryFormat, brokerAddress), brokerAddress)
+	requestJSON := map[string]string{}
+	requestJSON[query.queryFormat] = query.query
+	queryOptions := t.buildQueryOptions(query)
 	if queryOptions != "" {
 		requestJSON["queryOptions"] = queryOptions
 	}
