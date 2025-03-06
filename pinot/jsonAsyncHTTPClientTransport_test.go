@@ -79,7 +79,7 @@ func TestBuildQueryOptions(t *testing.T) {
 	}))
 
 	transport = &jsonAsyncHTTPClientTransport{
-		client: http.DefaultClient,
+		client: &http.Client{},
 		header: map[string]string{"a": "b"},
 	}
 
