@@ -5,8 +5,6 @@ import (
 	"math/big"
 	"strings"
 	"time"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // Connection to Pinot, normally created through calls to the {@link ConnectionFactory}.
@@ -26,8 +24,7 @@ func (c *Connection) UseMultistageEngine(useMultistageEngine bool) {
 func (c *Connection) ExecuteSQL(table string, query string) (*BrokerResponse, error) {
 	brokerAddress, err := c.brokerSelector.selectBroker(table)
 	if err != nil {
-		log.Errorf("Unable to find an available broker for table %s, Error: %v\n", table, err)
-		return nil, err
+		return nil, fmt.Errorf("unable to find an available broker for table %s, Error: %v", table, err)
 	}
 	brokerResp, err := c.transport.execute(brokerAddress, &Request{
 		queryFormat:         "sql",
@@ -36,8 +33,7 @@ func (c *Connection) ExecuteSQL(table string, query string) (*BrokerResponse, er
 		useMultistageEngine: c.useMultistageEngine,
 	})
 	if err != nil {
-		log.Errorf("Caught exception to execute SQL query %s, Error: %v\n", query, err)
-		return nil, err
+		return nil, fmt.Errorf("caught exception to execute SQL query %s, Error: %v", query, err)
 	}
 	return brokerResp, err
 }
@@ -46,7 +42,6 @@ func (c *Connection) ExecuteSQL(table string, query string) (*BrokerResponse, er
 func (c *Connection) ExecuteSQLWithParams(table string, queryPattern string, params []interface{}) (*BrokerResponse, error) {
 	query, err := formatQuery(queryPattern, params)
 	if err != nil {
-		log.Errorf("Failed to format query: %v\n", err)
 		return nil, fmt.Errorf("failed to format query: %v", err)
 	}
 	return c.ExecuteSQL(table, query)
@@ -67,7 +62,6 @@ func formatQuery(queryPattern string, params []interface{}) (string, error) {
 		newQuery.WriteString(part)
 		formattedParam, err := formatArg(params[i])
 		if err != nil {
-			log.Errorf("Failed to format parameter: %v\n", err)
 			return "", fmt.Errorf("failed to format parameter: %v", err)
 		}
 		newQuery.WriteString(formattedParam)

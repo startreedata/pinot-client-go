@@ -40,13 +40,11 @@ func (s *controllerBasedSelector) init() error {
 	var err error
 	s.controllerAPIReqURL, err = getControllerRequestURL(s.config.ControllerAddress)
 	if err != nil {
-		log.Errorf("An error occurred when parsing controller address: %v", err)
-		return err
+		return fmt.Errorf("an error occurred when parsing controller address: %v", err)
 	}
 
 	if err = s.updateBrokerData(); err != nil {
-		log.Errorf("An error occurred when fetching broker data from controller API for the first time, Error: %v", err)
-		return err
+		return fmt.Errorf("an error occurred when fetching broker data from controller API: %v", err)
 	}
 	go s.setupInterval()
 	return nil

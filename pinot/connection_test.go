@@ -85,7 +85,7 @@ func TestSendingQueryWithNonJsonResponse(t *testing.T) {
 	assert.Nil(t, err)
 	_, err = pinotClient.ExecuteSQL("", "select teamID, count(*) as cnt, sum(homeRuns) as sum_homeRuns from baseballStats group by teamID limit 10")
 	assert.NotNil(t, err)
-	assert.True(t, strings.HasPrefix(err.Error(), "invalid character"))
+	assert.True(t, strings.Contains(err.Error(), "invalid character"))
 }
 
 func TestConnectionWithControllerBasedBrokerSelector(t *testing.T) {
@@ -333,7 +333,7 @@ func TestExecuteSQLWithParams(t *testing.T) {
 	_, err = conn.ExecuteSQLWithParams("baseballStats2", queryPattern, params)
 
 	assert.NotNil(t, err)
-	assert.EqualError(t, err, "error selecting broker")
+	assert.ErrorContains(t, err, "error selecting broker")
 
 	// Test case 3: Error in formatting query
 	mockBrokerSelector.On("selectBroker", "baseballStats3").Return("host2:8000", nil)
@@ -342,7 +342,7 @@ func TestExecuteSQLWithParams(t *testing.T) {
 	_, err = conn.ExecuteSQLWithParams("baseballStats3", queryPattern, params)
 
 	assert.NotNil(t, err)
-	assert.EqualError(t, err, "error executing query")
+	assert.ErrorContains(t, err, "error executing query")
 
 	// Test case 4: Error in formatting query with mismatched number of parameters
 	queryPattern = "SELECT * FROM table WHERE id = ? AND name = ?"
