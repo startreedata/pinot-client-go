@@ -2,8 +2,8 @@
 
 # Set the Pinot version
 if [ -z "${PINOT_VERSION}" ]; then
-  echo "PINOT_VERSION is not set. Using default version 1.0.0"
-  PINOT_VERSION="1.0.0"
+  echo "PINOT_VERSION is not set. Using default version 1.3.0"
+  PINOT_VERSION="1.3.0"
 fi
 
 # Set the download URL
@@ -29,7 +29,7 @@ if [ -d "${PINOT_HOME}/apache-pinot-${PINOT_VERSION}-bin" ]; then
     echo "Pinot package already exists in ${PINOT_HOME}/apache-pinot-${PINOT_VERSION}-bin"
 else
     # Download the Pinot package
-    curl -L "${DOWNLOAD_URL}" -o "${PINOT_HOME}/apache-pinot-${PINOT_VERSION}-bin.tar.gz"
+    curl  --parallel -L "${DOWNLOAD_URL}" -o "${PINOT_HOME}/apache-pinot-${PINOT_VERSION}-bin.tar.gz"
 
     # Extract the downloaded package
     tar -xzf "${PINOT_HOME}/apache-pinot-${PINOT_VERSION}-bin.tar.gz" -C "${PINOT_HOME}"

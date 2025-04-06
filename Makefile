@@ -30,7 +30,7 @@ build:
 
 .PHONY: test
 test: build
-	go test -timeout 500s -v -race -covermode atomic -coverprofile=profile.cov $(PACKAGES)
+	go test -timeout 500s -v -race -covermode atomic -coverprofile=coverage.out $(PACKAGES)
 
 .PHONY: run-pinot-dist
 run-pinot-dist:
@@ -42,4 +42,4 @@ run-pinot-docker:
 
 .PHONY: integration-test
 integration-test: build
-	go test -timeout 500s -v -race -covermode atomic -coverprofile=profile.cov $(INTEGRATION_TESTS_PACKAGES)
+	go test -timeout 500s -v -race -covermode atomic -coverprofile=coverage.out $(INTEGRATION_TESTS_PACKAGES)
