@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-
-	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -106,8 +104,7 @@ func NewWithConfigAndClient(config *ClientConfig, httpClient *http.Client) (*Con
 	if conn != nil {
 		// TODO: error handling results into `make test` failure.
 		if err := conn.brokerSelector.init(); err != nil {
-			log.Errorf("Failed to initialize broker selector: %v", err)
-			return conn, err
+			return conn, fmt.Errorf("failed to initialize broker selector: %v", err)
 		}
 		return conn, nil
 	}

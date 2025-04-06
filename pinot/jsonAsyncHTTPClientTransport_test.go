@@ -44,7 +44,7 @@ func TestJsonAsyncHTTPClientTransport(t *testing.T) {
 		query:       "select * from baseballStats limit 10",
 	})
 	assert.NotNil(t, err)
-	assert.True(t, strings.HasPrefix(err.Error(), "parse "))
+	assert.True(t, strings.Contains(err.Error(), "parse "))
 
 	_, err = transport.execute("randomhost", &Request{
 		queryFormat: "sql",
@@ -58,7 +58,7 @@ func TestJsonAsyncHTTPClientTransport(t *testing.T) {
 		useMultistageEngine: true,
 	})
 	assert.NotNil(t, err)
-	assert.True(t, strings.HasPrefix(err.Error(), "Post "))
+	assert.True(t, strings.Contains(err.Error(), "Post "))
 }
 
 func TestBuildQueryOptions(t *testing.T) {

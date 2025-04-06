@@ -39,22 +39,19 @@ func (s *dynamicBrokerSelector) init() error {
 	var err error
 	s.zkConn, _, err = zk.Connect(s.zkConfig.ZookeeperPath, time.Duration(s.zkConfig.SessionTimeoutSec)*time.Second)
 	if err != nil {
-		log.Errorf("Failed to connect to zookeeper: %v\n", s.zkConfig.ZookeeperPath)
-		return err
+		return fmt.Errorf("failed to connect to zookeeper: %v, error: %v", s.zkConfig.ZookeeperPath, err)
 	}
 	s.readZNode = func(_ string) ([]byte, error) {
 		node, _, err2 := s.zkConn.Get(s.externalViewZkPath)
 		if err2 != nil {
-			log.Errorf("Failed to read zk: %s, ExternalView path: %s\n", s.zkConfig.ZookeeperPath, s.externalViewZkPath)
-			return nil, err2
+			return nil, fmt.Errorf("failed to read zk: %s, ExternalView path: %s, error: %v", s.zkConfig.ZookeeperPath, s.externalViewZkPath, err2)
 		}
 		return node, nil
 	}
 	s.externalViewZkPath = s.zkConfig.PathPrefix + "/" + brokerExternalViewPath
 	_, _, s.externalViewZnodeWatch, err = s.zkConn.GetW(s.externalViewZkPath)
 	if err != nil {
-		log.Errorf("Failed to set a watcher on ExternalView path: %s, Error: %v\n", strings.Join(append(s.zkConfig.ZookeeperPath, s.externalViewZkPath), ""), err)
-		return err
+		return fmt.Errorf("failed to set a watcher on ExternalView path: %s, error: %v", strings.Join(append(s.zkConfig.ZookeeperPath, s.externalViewZkPath), ""), err)
 	}
 	if err = s.refreshExternalView(); err != nil {
 		return err
@@ -100,8 +97,7 @@ func (s *dynamicBrokerSelector) refreshExternalView() error {
 func getExternalView(evBytes []byte) (*externalView, error) {
 	var ev externalView
 	if err := json.Unmarshal(evBytes, &ev); err != nil {
-		log.Errorf("Failed to unmarshal ExternalView: %s, Error: %v\n", evBytes, err)
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshal ExternalView: %s, Error: %v", evBytes, err)
 	}
 	return &ev, nil
 }
@@ -133,14 +129,11 @@ func extractBrokers(brokerMap map[string]string) []string {
 func extractBrokerHostPort(brokerKey string) (string, string, error) {
 	splits := strings.Split(brokerKey, "_")
 	if len(splits) < 2 {
-		err := fmt.Errorf("Invalid Broker Key: %s, should be in the format of Broker_[hostname]_[port]", brokerKey)
-		log.Error(err)
-		return "", "", err
+		return "", "", fmt.Errorf("invalid Broker Key: %s, should be in the format of Broker_[hostname]_[port]", brokerKey)
 	}
 	_, err := strconv.Atoi(splits[len(splits)-1])
 	if err != nil {
-		log.Errorf("Failed to parse broker port:%s to integer", splits[len(splits)-1])
-		return "", "", err
+		return "", "", fmt.Errorf("failed to parse broker port:%s to integer, Error: %v", splits[len(splits)-1], err)
 	}
 	return splits[len(splits)-2], splits[len(splits)-1], nil
 }
