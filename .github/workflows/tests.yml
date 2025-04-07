@@ -21,7 +21,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: 1.19
+          go-version: 1.24
           cache: false
 
       - name: Linter
@@ -36,7 +36,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.19
+          go-version: 1.24
 
       - name: Before Install
         run: make setup
@@ -47,19 +47,15 @@ jobs:
       - name: Test
         run: make test
 
-      - name: Convert coverage to lcov
-        uses: jandelgado/gcov2lcov-action@v1.0.9
-        with:
-          infile: profile.cov
-          outfile: coverage.lcov
-
       - name: Publish to coveralls.io
         uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ github.token }}
-          path-to-lcov: coverage.lcov
+          file: coverage.out
+          format: golang
           flag-name: unit
           allow-empty: true
+          parallel: true
 
   integration-tests:
     runs-on: ubuntu-latest
@@ -70,7 +66,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.19
+          go-version: 1.24
 
       - name: Before Install
         run: make setup
@@ -99,16 +95,27 @@ jobs:
           CONTROLLER_PORT: 9000
           BROKER_PORT: 8000
 
-      - name: Convert coverage to lcov
-        uses: jandelgado/gcov2lcov-action@v1.0.9
-        with:
-          infile: profile.cov
-          outfile: coverage.lcov
-
       - name: Publish to coveralls.io
         uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ github.token }}
-          path-to-lcov: coverage.lcov
+          file: coverage.out
+          format: golang
           flag-name: integration
           allow-empty: true
+          parallel: true
+
+  finish:
+    needs:
+      - unit-tests
+      - integration-tests
+    name: Coveralls Finished
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Coveralls Finished
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ github.token }}
+          parallel-finished: true
+          carryforward: "unit,integration"
