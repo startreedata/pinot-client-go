@@ -33,7 +33,7 @@ func (c *Connection) ExecuteSQL(table string, query string) (*BrokerResponse, er
 		useMultistageEngine: c.useMultistageEngine,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("caught exception to execute SQL query %s, Error: %v", query, err)
+		return nil, fmt.Errorf("caught exception to execute SQL query %s, Error: %w", query, err)
 	}
 	return brokerResp, err
 }

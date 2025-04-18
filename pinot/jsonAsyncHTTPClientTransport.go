@@ -65,7 +65,7 @@ func (t jsonAsyncHTTPClientTransport) execute(brokerAddress string, query *Reque
 	}
 	resp, err := t.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("got exceptions during sending request. %v", err)
+		return nil, fmt.Errorf("got exceptions during sending request. %w", err)
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
@@ -75,7 +75,7 @@ func (t jsonAsyncHTTPClientTransport) execute(brokerAddress string, query *Reque
 	if resp.StatusCode == http.StatusOK {
 		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return nil, fmt.Errorf("unable to read Pinot response. %v", err)
+			return nil, fmt.Errorf("unable to read Pinot response. %w", err)
 		}
 		var brokerResponse BrokerResponse
 		if err = decodeJSONWithNumber(bodyBytes, &brokerResponse); err != nil {
@@ -102,7 +102,7 @@ func getQueryTemplate(queryFormat string, brokerAddress string) string {
 func createHTTPRequest(url string, jsonValue []byte, extraHeader map[string]string) (*http.Request, error) {
 	r, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
 	if err != nil {
-		return nil, fmt.Errorf("invalid HTTP request: %v", err)
+		return nil, fmt.Errorf("invalid HTTP request: %w", err)
 	}
 	for k, v := range defaultHTTPHeader {
 		r.Header.Add(k, v)
