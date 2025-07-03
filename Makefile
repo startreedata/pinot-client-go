@@ -36,9 +36,18 @@ test: build
 run-pinot-dist:
 	./scripts/start-pinot-quickstart.sh
 
+.PHONY: stop-pinot-dist
+stop-pinot-dist:
+	./scripts/stop-pinot-quickstart.sh
+
 .PHONY: run-pinot-docker
 run-pinot-docker:
 	docker run --name pinot-quickstart -p 2123:2123 -p 9000:9000 -p 8000:8000 apachepinot/pinot:latest QuickStart -type MULTI_STAGE
+
+.PHONY: stop-pinot-docker
+stop-pinot-docker:
+	docker stop pinot-quickstart || true
+	docker rm pinot-quickstart || true
 
 .PHONY: integration-test
 integration-test: build
