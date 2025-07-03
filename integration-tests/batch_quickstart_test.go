@@ -208,7 +208,7 @@ func testBasicPreparedStatement(t *testing.T, client *pinot.Connection, table st
 	stmt, err := client.Prepare(table, "select count(*) as cnt from baseballStats where teamID = ? limit 1")
 	assert.NoError(t, err)
 	assert.NotNil(t, stmt)
-	defer stmt.Close()
+	defer func() { _ = stmt.Close() }()
 
 	// Verify statement properties
 	assert.Equal(t, 1, stmt.GetParameterCount())
@@ -236,11 +236,11 @@ func testBasicPreparedStatement(t *testing.T, client *pinot.Connection, table st
 // testPreparedStatementWithMultipleParams tests PreparedStatement with multiple parameters
 func testPreparedStatementWithMultipleParams(t *testing.T, client *pinot.Connection, table string) {
 	// Create a prepared statement with multiple parameters
-	stmt, err := client.Prepare(table, 
+	stmt, err := client.Prepare(table,
 		"select playerName, sum(homeRuns) as totalHomeRuns from baseballStats where teamID = ? and yearID >= ? group by playerID, playerName order by totalHomeRuns desc limit ?")
 	assert.NoError(t, err)
 	assert.NotNil(t, stmt)
-	defer stmt.Close()
+	defer func() { _ = stmt.Close() }()
 
 	// Verify statement properties
 	assert.Equal(t, 3, stmt.GetParameterCount())
@@ -248,9 +248,9 @@ func testPreparedStatementWithMultipleParams(t *testing.T, client *pinot.Connect
 	// Set parameters
 	err = stmt.SetString(1, "NYA") // New York Yankees
 	assert.NoError(t, err)
-	err = stmt.SetInt(2, 2000)     // Year >= 2000
+	err = stmt.SetInt(2, 2000) // Year >= 2000
 	assert.NoError(t, err)
-	err = stmt.SetInt(3, 5)        // Limit 5
+	err = stmt.SetInt(3, 5) // Limit 5
 	assert.NoError(t, err)
 
 	response, err := stmt.Execute()
@@ -271,7 +271,7 @@ func testPreparedStatementReuse(t *testing.T, client *pinot.Connection, table st
 	stmt, err := client.Prepare(table, "select count(*) as playerCount, sum(homeRuns) as totalHomeRuns from baseballStats where teamID = ?")
 	assert.NoError(t, err)
 	assert.NotNil(t, stmt)
-	defer stmt.Close()
+	defer func() { _ = stmt.Close() }()
 
 	// Test different teams
 	teams := []string{"NYA", "BOS", "LAA"}
@@ -308,11 +308,11 @@ func testPreparedStatementReuse(t *testing.T, client *pinot.Connection, table st
 // testPreparedStatementExecuteWithParams tests the ExecuteWithParams convenience method
 func testPreparedStatementExecuteWithParams(t *testing.T, client *pinot.Connection, table string) {
 	// Create a prepared statement
-	stmt, err := client.Prepare(table, 
+	stmt, err := client.Prepare(table,
 		"select count(*) as cnt from baseballStats where yearID between ? and ? and homeRuns >= ?")
 	assert.NoError(t, err)
 	assert.NotNil(t, stmt)
-	defer stmt.Close()
+	defer func() { _ = stmt.Close() }()
 
 	// Test ExecuteWithParams method
 	response, err := stmt.ExecuteWithParams(2000, 2010, 20)
@@ -340,11 +340,11 @@ func testPreparedStatementExecuteWithParams(t *testing.T, client *pinot.Connecti
 // testPreparedStatementDifferentTypes tests PreparedStatement with different parameter types
 func testPreparedStatementDifferentTypes(t *testing.T, client *pinot.Connection, table string) {
 	// Create a prepared statement that can test different parameter types
-	stmt, err := client.Prepare(table, 
+	stmt, err := client.Prepare(table,
 		"select count(*) as cnt from baseballStats where yearID = ? and homeRuns >= ? and battingAvg > ?")
 	assert.NoError(t, err)
 	assert.NotNil(t, stmt)
-	defer stmt.Close()
+	defer func() { _ = stmt.Close() }()
 
 	// Test with int, int, and float parameters
 	err = stmt.SetInt(1, 2001)
@@ -400,7 +400,7 @@ func TestPreparedStatementIntegrationWithMultistage(t *testing.T) {
 			stmt, err := pinotClient.Prepare(table, "select teamID, count(*) as cnt from baseballStats where yearID = ? group by teamID order by cnt desc limit ?")
 			assert.NoError(t, err)
 			assert.NotNil(t, stmt)
-			defer stmt.Close()
+			defer func() { _ = stmt.Close() }()
 
 			response, err := stmt.ExecuteWithParams(2000, 10)
 			assert.NoError(t, err)

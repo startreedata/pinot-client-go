@@ -157,7 +157,7 @@ func TestPreparedStatement_Execute_WithMockServer(t *testing.T) {
 
 func TestPreparedStatement_ExecuteWithParams_WithMockServer(t *testing.T) {
 	// Mock HTTP server
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_, err := fmt.Fprintln(w, `{"resultTable":{"dataSchema":{"columnDataTypes":["LONG","STRING","LONG"],"columnNames":["id","name","age"]},"rows":[[123,"testName",25]]},"exceptions":[],"numServersQueried":1,"numServersResponded":1,"timeUsedMs":5}`)
@@ -276,18 +276,18 @@ func TestPreparedStatement_ComplexQueryFormattingLikeJava(t *testing.T) {
 	connection := &Connection{}
 
 	// Complex query similar to what might be used in Java PreparedStatement examples
-	stmt, err := connection.Prepare("baseballStats", 
-		"SELECT playerName, sum(homeRuns) as totalHomeRuns " +
-		"FROM baseballStats " +
-		"WHERE homeRuns > ? AND teamID = ? AND yearID BETWEEN ? AND ? " +
-		"GROUP BY playerID, playerName " +
-		"ORDER BY totalHomeRuns DESC " +
-		"LIMIT ?")
+	stmt, err := connection.Prepare("baseballStats",
+		"SELECT playerName, sum(homeRuns) as totalHomeRuns "+
+			"FROM baseballStats "+
+			"WHERE homeRuns > ? AND teamID = ? AND yearID BETWEEN ? AND ? "+
+			"GROUP BY playerID, playerName "+
+			"ORDER BY totalHomeRuns DESC "+
+			"LIMIT ?")
 	assert.NoError(t, err)
 	assert.Equal(t, 5, stmt.GetParameterCount())
 
 	ps := stmt.(*preparedStatement)
-	
+
 	// Test with typical parameters
 	params := []interface{}{0, "OAK", 2000, 2010, 10}
 	query, err := ps.buildQuery(params)
@@ -309,7 +309,7 @@ func TestPreparedStatement_ConcurrentUsage(t *testing.T) {
 
 	// Test concurrent parameter setting (should be thread-safe)
 	done := make(chan bool, 10)
-	
+
 	for i := 0; i < 10; i++ {
 		go func(id int) {
 			defer func() { done <- true }()
@@ -325,4 +325,4 @@ func TestPreparedStatement_ConcurrentUsage(t *testing.T) {
 
 	err = stmt.Close()
 	assert.NoError(t, err)
-} 
+}

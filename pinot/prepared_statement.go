@@ -235,4 +235,4 @@ func (ps *preparedStatement) buildQuery(params []interface{}) (string, error) {
 	// Add the last part of the query, which does not follow a '?'
 	query.WriteString(ps.queryParts[len(ps.queryParts)-1])
 	return query.String(), nil
-} 
+}

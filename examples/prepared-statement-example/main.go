@@ -14,13 +14,13 @@ func main() {
 		log.Fatalln("Failed to create Pinot client:", err)
 	}
 
-	fmt.Println("=== PreparedStatement Example for Pinot Go Client ===\n")
+	fmt.Println("=== PreparedStatement Example for Pinot Go Client ===")
 
 	// Example 1: Basic PreparedStatement usage
 	fmt.Println("1. Basic PreparedStatement Usage")
 	basicPreparedStatementExample(pinotClient)
 
-	// Example 2: Multiple executions with different parameters  
+	// Example 2: Multiple executions with different parameters
 	fmt.Println("\n2. Multiple Executions with Different Parameters")
 	multipleExecutionsExample(pinotClient)
 
@@ -41,7 +41,7 @@ func main() {
 
 func basicPreparedStatementExample(client *pinot.Connection) {
 	// Create a prepared statement for a simple query
-	stmt, err := client.Prepare("baseballStats", 
+	stmt, err := client.Prepare("baseballStats",
 		"SELECT playerName, sum(homeRuns) as totalHomeRuns FROM baseballStats WHERE teamID = ? GROUP BY playerID, playerName ORDER BY totalHomeRuns DESC LIMIT ?")
 	if err != nil {
 		log.Printf("Failed to prepare statement: %v", err)
@@ -89,7 +89,7 @@ func multipleExecutionsExample(client *pinot.Connection) {
 	years := []int{2000, 2005, 2010}
 	for _, year := range years {
 		fmt.Printf("\n--- Team statistics for year %d ---\n", year)
-		
+
 		// Set parameters for this execution
 		stmt.SetInt(1, year)
 		stmt.SetInt(2, 5) // Top 5 teams
@@ -110,14 +110,14 @@ func multipleExecutionsExample(client *pinot.Connection) {
 func complexQueryExample(client *pinot.Connection) {
 	// Create a complex prepared statement with multiple parameter types
 	stmt, err := client.Prepare("baseballStats",
-		"SELECT playerName, playerID, teamID, yearID, homeRuns, battingAvg " +
-		"FROM baseballStats " +
-		"WHERE yearID BETWEEN ? AND ? " +
-		"AND homeRuns >= ? " +
-		"AND teamID IN (?, ?) " +
-		"AND battingAvg > ? " +
-		"ORDER BY homeRuns DESC " +
-		"LIMIT ?")
+		"SELECT playerName, playerID, teamID, yearID, homeRuns, battingAvg "+
+			"FROM baseballStats "+
+			"WHERE yearID BETWEEN ? AND ? "+
+			"AND homeRuns >= ? "+
+			"AND teamID IN (?, ?) "+
+			"AND battingAvg > ? "+
+			"ORDER BY homeRuns DESC "+
+			"LIMIT ?")
 	if err != nil {
 		log.Printf("Failed to prepare complex statement: %v", err)
 		return
@@ -126,7 +126,7 @@ func complexQueryExample(client *pinot.Connection) {
 
 	// Set parameters with different types
 	stmt.SetInt(1, 2005)      // Start year
-	stmt.SetInt(2, 2010)      // End year  
+	stmt.SetInt(2, 2010)      // End year
 	stmt.SetInt(3, 20)        // Minimum home runs
 	stmt.SetString(4, "NYA")  // Team 1 (New York Yankees)
 	stmt.SetString(5, "BOS")  // Team 2 (Boston Red Sox)
@@ -145,13 +145,13 @@ func complexQueryExample(client *pinot.Connection) {
 func executeWithParamsExample(client *pinot.Connection) {
 	// Create a prepared statement for player statistics
 	stmt, err := client.Prepare("baseballStats",
-		"SELECT playerName, AVG(battingAvg) as avgBattingAvg, SUM(homeRuns) as totalHomeRuns, COUNT(*) as seasons " +
-		"FROM baseballStats " +
-		"WHERE playerName LIKE ? " +
-		"GROUP BY playerID, playerName " +
-		"HAVING COUNT(*) >= ? " +
-		"ORDER BY avgBattingAvg DESC " +
-		"LIMIT ?")
+		"SELECT playerName, AVG(battingAvg) as avgBattingAvg, SUM(homeRuns) as totalHomeRuns, COUNT(*) as seasons "+
+			"FROM baseballStats "+
+			"WHERE playerName LIKE ? "+
+			"GROUP BY playerID, playerName "+
+			"HAVING COUNT(*) >= ? "+
+			"ORDER BY avgBattingAvg DESC "+
+			"LIMIT ?")
 	if err != nil {
 		log.Printf("Failed to prepare statement: %v", err)
 		return
@@ -212,7 +212,7 @@ func errorHandlingExample(client *pinot.Connection) {
 
 func printQueryResults(title string, response *pinot.BrokerResponse) {
 	fmt.Printf("--- %s ---\n", title)
-	
+
 	if response.Exceptions != nil && len(response.Exceptions) > 0 {
 		fmt.Printf("Query returned exceptions: %v\n", response.Exceptions)
 		return
@@ -259,7 +259,7 @@ func printQueryResults(title string, response *pinot.BrokerResponse) {
 // Alternative example showing prepared statement reuse pattern
 func demonstratePreparedStatementReuse() {
 	fmt.Println("\n=== Prepared Statement Reuse Pattern ===")
-	
+
 	client, err := pinot.NewFromBrokerList([]string{"localhost:8000"})
 	if err != nil {
 		log.Printf("Failed to create client: %v", err)
@@ -267,7 +267,7 @@ func demonstratePreparedStatementReuse() {
 	}
 
 	// Create a prepared statement once
-	stmt, err := client.Prepare("baseballStats", 
+	stmt, err := client.Prepare("baseballStats",
 		"SELECT COUNT(*) as count FROM baseballStats WHERE teamID = ? AND yearID = ?")
 	if err != nil {
 		log.Printf("Failed to prepare statement: %v", err)
@@ -305,4 +305,4 @@ func demonstratePreparedStatementReuse() {
 		}
 		fmt.Println()
 	}
-} 
+}
