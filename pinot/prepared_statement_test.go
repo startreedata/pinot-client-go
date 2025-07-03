@@ -208,7 +208,7 @@ func TestPreparedStatement_ParameterFormatting(t *testing.T) {
 	query, err := ps.buildQuery(params)
 	assert.NoError(t, err)
 
-	expected := "SELECT * FROM testTable WHERE col1 = 'string_value' AND col2 = 123 AND col3 = 3.14 AND col4 = true AND col5 = 1672574400000"
+	expected := "SELECT * FROM testTable WHERE col1 = 'string_value' AND col2 = 123 AND col3 = 3.14 AND col4 = true AND col5 = '2023-01-01 12:00:00.000'"
 	assert.Equal(t, expected, query)
 }
 
