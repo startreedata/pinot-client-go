@@ -193,7 +193,8 @@ func TestPreparedStatement_ParameterFormatting(t *testing.T) {
 	stmt, err := connection.Prepare("testTable", "SELECT * FROM testTable WHERE col1 = ? AND col2 = ? AND col3 = ? AND col4 = ? AND col5 = ?")
 	assert.NoError(t, err)
 
-	ps := stmt.(*preparedStatement)
+	ps, ok := stmt.(*preparedStatement)
+	assert.True(t, ok, "Expected stmt to be a *preparedStatement")
 
 	// Test parameter formatting
 	params := []interface{}{
@@ -286,7 +287,8 @@ func TestPreparedStatement_ComplexQueryFormattingLikeJava(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 5, stmt.GetParameterCount())
 
-	ps := stmt.(*preparedStatement)
+	ps, ok := stmt.(*preparedStatement)
+	assert.True(t, ok, "Expected stmt to be a *preparedStatement")
 
 	// Test with typical parameters
 	params := []interface{}{0, "OAK", 2000, 2010, 10}

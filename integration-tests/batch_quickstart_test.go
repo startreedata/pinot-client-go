@@ -208,7 +208,7 @@ func testBasicPreparedStatement(t *testing.T, client *pinot.Connection, table st
 	stmt, err := client.Prepare(table, "select count(*) as cnt from baseballStats where teamID = ? limit 1")
 	assert.NoError(t, err)
 	assert.NotNil(t, stmt)
-	defer func() { _ = stmt.Close() }()
+	defer func() { _ = stmt.Close() }() //nolint:errcheck
 
 	// Verify statement properties
 	assert.Equal(t, 1, stmt.GetParameterCount())
@@ -240,7 +240,7 @@ func testPreparedStatementWithMultipleParams(t *testing.T, client *pinot.Connect
 		"select playerName, sum(homeRuns) as totalHomeRuns from baseballStats where teamID = ? and yearID >= ? group by playerID, playerName order by totalHomeRuns desc limit ?")
 	assert.NoError(t, err)
 	assert.NotNil(t, stmt)
-	defer func() { _ = stmt.Close() }()
+	defer func() { _ = stmt.Close() }() //nolint:errcheck
 
 	// Verify statement properties
 	assert.Equal(t, 3, stmt.GetParameterCount())
@@ -271,7 +271,7 @@ func testPreparedStatementReuse(t *testing.T, client *pinot.Connection, table st
 	stmt, err := client.Prepare(table, "select count(*) as playerCount, sum(homeRuns) as totalHomeRuns from baseballStats where teamID = ?")
 	assert.NoError(t, err)
 	assert.NotNil(t, stmt)
-	defer func() { _ = stmt.Close() }()
+	defer func() { _ = stmt.Close() }() //nolint:errcheck
 
 	// Test different teams
 	teams := []string{"NYA", "BOS", "LAA"}
@@ -312,7 +312,7 @@ func testPreparedStatementExecuteWithParams(t *testing.T, client *pinot.Connecti
 		"select count(*) as cnt from baseballStats where yearID between ? and ? and homeRuns >= ?")
 	assert.NoError(t, err)
 	assert.NotNil(t, stmt)
-	defer func() { _ = stmt.Close() }()
+	defer func() { _ = stmt.Close() }() //nolint:errcheck
 
 	// Test ExecuteWithParams method
 	response, err := stmt.ExecuteWithParams(2000, 2010, 20)
@@ -344,7 +344,7 @@ func testPreparedStatementDifferentTypes(t *testing.T, client *pinot.Connection,
 		"select count(*) as cnt from baseballStats where yearID = ? and homeRuns >= ? and battingAvg > ?")
 	assert.NoError(t, err)
 	assert.NotNil(t, stmt)
-	defer func() { _ = stmt.Close() }()
+	defer func() { _ = stmt.Close() }() //nolint:errcheck
 
 	// Test with int, int, and float parameters
 	err = stmt.SetInt(1, 2001)
@@ -400,7 +400,7 @@ func TestPreparedStatementIntegrationWithMultistage(t *testing.T) {
 			stmt, err := pinotClient.Prepare(table, "select teamID, count(*) as cnt from baseballStats where yearID = ? group by teamID order by cnt desc limit ?")
 			assert.NoError(t, err)
 			assert.NotNil(t, stmt)
-			defer func() { _ = stmt.Close() }()
+			defer func() { _ = stmt.Close() }() //nolint:errcheck
 
 			response, err := stmt.ExecuteWithParams(2000, 10)
 			assert.NoError(t, err)
