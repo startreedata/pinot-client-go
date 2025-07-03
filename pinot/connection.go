@@ -84,8 +84,8 @@ func formatArg(value interface{}) (string, error) {
 		hexString := fmt.Sprintf("%x", v)
 		return fmt.Sprintf("'%s'", hexString), nil
 	case time.Time:
-		// For pinot type - TIMESTAMP - write as milliseconds since epoch
-		return fmt.Sprintf("%d", v.UnixMilli()), nil
+		// For pinot type - TIMESTAMP - convert to ISO8601 format and enclose in single quotes
+		return fmt.Sprintf("'%s'", v.Format("2006-01-02 15:04:05.000")), nil
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64, bool:
 		// For types - INT, LONG, FLOAT, DOUBLE and BOOLEAN use as-is
 		return fmt.Sprintf("%v", v), nil
