@@ -1,0 +1,138 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g., v1.0.0)'
+        required: true
+        type: string
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    name: Create Release
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate tag format
+        run: |
+          TAG="${{ github.event.inputs.tag }}"
+          if [[ ! $TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
+            echo "❌ Invalid tag format: $TAG"
+            echo "Expected format: v1.0.0 or v1.0.0-alpha"
+            exit 1
+          fi
+          echo "✅ Tag format is valid: $TAG"
+
+      - name: Check if tag already exists
+        run: |
+          TAG="${{ github.event.inputs.tag }}"
+          if git tag -l | grep -q "^$TAG$"; then
+            echo "❌ Tag $TAG already exists locally"
+            exit 1
+          fi
+          if git ls-remote --tags origin | grep -q "refs/tags/$TAG$"; then
+            echo "❌ Tag $TAG already exists on remote"
+            exit 1
+          fi
+          echo "✅ Tag $TAG is available"
+
+      - name: Configure git
+        run: |
+          git config user.name "Apache Pinot"
+          git config user.email "dev@pinot.apache.org"
+
+      - name: Create and push tag
+        run: |
+          TAG="${{ github.event.inputs.tag }}"
+          echo "🏷️  Creating tag: $TAG"
+          git tag "$TAG"
+          echo "📤 Pushing tag to remote..."
+          git push origin "$TAG"
+          echo "✅ Tag $TAG created and pushed successfully"
+
+      - name: Extract version info
+        id: version
+        run: |
+          TAG="${{ github.event.inputs.tag }}"
+          VERSION=${TAG#v}
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "major_version=$(echo $VERSION | cut -d. -f1)" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          TAG="${{ github.event.inputs.tag }}"
+          # Get the previous tag
+          PREVIOUS_TAG=$(git tag -l "v*" --sort=-version:refname | head -n 1)
+          if [ -z "$PREVIOUS_TAG" ]; then
+            PREVIOUS_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+          
+          echo "Generating changelog from $PREVIOUS_TAG to $TAG"
+          
+          # Generate changelog
+          CHANGELOG=$(git log --oneline --pretty=format:"- %s" $PREVIOUS_TAG..HEAD)
+          
+          # Save changelog to file for multiline handling
+          cat > changelog.md << EOF
+          ## What's Changed
+          
+          $CHANGELOG
+          
+          ## Installation
+          
+          \`\`\`bash
+          go get github.com/startreedata/pinot-client-go@$TAG
+          \`\`\`
+          
+          ## Usage
+          
+          \`\`\`go
+          import "github.com/startreedata/pinot-client-go/pinot"
+          
+          pinotClient, err := pinot.NewFromBrokerList([]string{"localhost:8000"})
+          if err != nil {
+              log.Fatal(err)
+          }
+          
+          // Execute a query
+          response, err := pinotClient.ExecuteSQL("myTable", "SELECT * FROM myTable LIMIT 10")
+          \`\`\`
+          
+          **Full Changelog**: https://github.com/startreedata/pinot-client-go/compare/$PREVIOUS_TAG...$TAG
+          EOF
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Release ${{ steps.version.outputs.tag }}
+          body_path: changelog.md
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.tag, '-') }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update major version tag
+        if: ${{ !contains(steps.version.outputs.tag, '-') }}
+        run: |
+          MAJOR_TAG="v${{ steps.version.outputs.major_version }}"
+          echo "🔄 Updating major version tag: $MAJOR_TAG"
+          git tag -f "$MAJOR_TAG"
+          git push origin "$MAJOR_TAG" --force
+          echo "✅ Major version tag updated"
+
+      - name: Success notification
+        run: |
+          TAG="${{ github.event.inputs.tag }}"
+          echo "🎉 Release $TAG has been successfully created!"
+          echo "📦 Go developers can now install with: go get github.com/startreedata/pinot-client-go@$TAG"
+          echo "📋 Release page: https://github.com/startreedata/pinot-client-go/releases/tag/$TAG" 
