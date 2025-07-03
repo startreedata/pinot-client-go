@@ -1,0 +1,1289 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>pinot: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/startreedata/pinot-client-go/pinot/connection.go (100.0%)</option>
+				
+				<option value="file1">github.com/startreedata/pinot-client-go/pinot/connectionFactory.go (100.0%)</option>
+				
+				<option value="file2">github.com/startreedata/pinot-client-go/pinot/controllerBasedBrokerSelector.go (93.0%)</option>
+				
+				<option value="file3">github.com/startreedata/pinot-client-go/pinot/controllerResponse.go (100.0%)</option>
+				
+				<option value="file4">github.com/startreedata/pinot-client-go/pinot/dynamicBrokerSelector.go (84.4%)</option>
+				
+				<option value="file5">github.com/startreedata/pinot-client-go/pinot/json.go (100.0%)</option>
+				
+				<option value="file6">github.com/startreedata/pinot-client-go/pinot/jsonAsyncHTTPClientTransport.go (93.0%)</option>
+				
+				<option value="file7">github.com/startreedata/pinot-client-go/pinot/prepared_statement.go (94.1%)</option>
+				
+				<option value="file8">github.com/startreedata/pinot-client-go/pinot/response.go (72.7%)</option>
+				
+				<option value="file9">github.com/startreedata/pinot-client-go/pinot/simplebrokerselector.go (100.0%)</option>
+				
+				<option value="file10">github.com/startreedata/pinot-client-go/pinot/tableAwareBrokerSelector.go (100.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package pinot
+
+import (
+        "fmt"
+        "math/big"
+        "strings"
+        "time"
+)
+
+// Connection to Pinot, normally created through calls to the {@link ConnectionFactory}.
+type Connection struct {
+        transport           clientTransport
+        brokerSelector      brokerSelector
+        trace               bool
+        useMultistageEngine bool
+}
+
+// UseMultistageEngine for the connection
+func (c *Connection) UseMultistageEngine(useMultistageEngine bool) <span class="cov8" title="1">{
+        c.useMultistageEngine = useMultistageEngine
+}</span>
+
+// ExecuteSQL for a given table
+func (c *Connection) ExecuteSQL(table string, query string) (*BrokerResponse, error) <span class="cov8" title="1">{
+        brokerAddress, err := c.brokerSelector.selectBroker(table)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("unable to find an available broker for table %s, Error: %v", table, err)
+        }</span>
+        <span class="cov8" title="1">brokerResp, err := c.transport.execute(brokerAddress, &amp;Request{
+                queryFormat:         "sql",
+                query:               query,
+                trace:               c.trace,
+                useMultistageEngine: c.useMultistageEngine,
+        })
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("caught exception to execute SQL query %s, Error: %w", query, err)
+        }</span>
+        <span class="cov8" title="1">return brokerResp, err</span>
+}
+
+// ExecuteSQLWithParams executes an SQL query with parameters for a given table
+func (c *Connection) ExecuteSQLWithParams(table string, queryPattern string, params []interface{}) (*BrokerResponse, error) <span class="cov8" title="1">{
+        query, err := formatQuery(queryPattern, params)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("failed to format query: %v", err)
+        }</span>
+        <span class="cov8" title="1">return c.ExecuteSQL(table, query)</span>
+}
+
+func formatQuery(queryPattern string, params []interface{}) (string, error) <span class="cov8" title="1">{
+        // Count the number of placeholders in queryPattern
+        numPlaceholders := strings.Count(queryPattern, "?")
+        if numPlaceholders != len(params) </span><span class="cov8" title="1">{
+                return "", fmt.Errorf("number of placeholders in queryPattern (%d) does not match number of params (%d)", numPlaceholders, len(params))
+        }</span>
+
+        // Split the query by '?' and incrementally build the new query
+        <span class="cov8" title="1">parts := strings.Split(queryPattern, "?")
+
+        var newQuery strings.Builder
+        for i, part := range parts[:len(parts)-1] </span><span class="cov8" title="1">{
+                newQuery.WriteString(part)
+                formattedParam, err := formatArg(params[i])
+                if err != nil </span><span class="cov8" title="1">{
+                        return "", fmt.Errorf("failed to format parameter: %v", err)
+                }</span>
+                <span class="cov8" title="1">newQuery.WriteString(formattedParam)</span>
+        }
+        // Add the last part of the query, which does not follow a '?'
+        <span class="cov8" title="1">newQuery.WriteString(parts[len(parts)-1])
+        return newQuery.String(), nil</span>
+}
+
+func formatArg(value interface{}) (string, error) <span class="cov8" title="1">{
+        switch v := value.(type) </span>{
+        case string:<span class="cov8" title="1">
+                // For pinot type - STRING - enclose in single quotes
+                return escapeStringValue(v), nil</span>
+        case *big.Int, *big.Float:<span class="cov8" title="1">
+                // For pinot types - BIG_DECIMAL and BYTES - enclose in single quotes
+                return fmt.Sprintf("'%v'", v), nil</span>
+        case []byte:<span class="cov8" title="1">
+                // For pinot type - BYTES - convert to Hex string and enclose in single quotes
+                hexString := fmt.Sprintf("%x", v)
+                return fmt.Sprintf("'%s'", hexString), nil</span>
+        case time.Time:<span class="cov8" title="1">
+                // For pinot type - TIMESTAMP - convert to ISO8601 format and enclose in single quotes
+                return fmt.Sprintf("'%s'", v.Format("2006-01-02 15:04:05.000")), nil</span>
+        case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64, bool:<span class="cov8" title="1">
+                // For types - INT, LONG, FLOAT, DOUBLE and BOOLEAN use as-is
+                return fmt.Sprintf("%v", v), nil</span>
+        default:<span class="cov8" title="1">
+                // Throw error for unsupported types
+                return "", fmt.Errorf("unsupported type: %T", v)</span>
+        }
+}
+
+func escapeStringValue(s string) string <span class="cov8" title="1">{
+        return fmt.Sprintf("'%s'", strings.ReplaceAll(s, "'", "''"))
+}</span>
+
+// OpenTrace for the connection
+func (c *Connection) OpenTrace() <span class="cov8" title="1">{
+        c.trace = true
+}</span>
+
+// CloseTrace for the connection
+func (c *Connection) CloseTrace() <span class="cov8" title="1">{
+        c.trace = false
+}</span>
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package pinot
+
+import (
+        "fmt"
+        "net/http"
+        "strings"
+)
+
+const (
+        defaultZkSessionTimeoutSec = 60
+)
+
+// NewFromBrokerList create a new Pinot connection with pre configured Pinot Broker list.
+func NewFromBrokerList(brokerList []string) (*Connection, error) <span class="cov8" title="1">{
+        return NewFromBrokerListAndClient(brokerList, http.DefaultClient)
+}</span>
+
+// NewFromBrokerListAndClient create a new Pinot connection with pre configured Pinot Broker list and http client.
+func NewFromBrokerListAndClient(brokerList []string, httpClient *http.Client) (*Connection, error) <span class="cov8" title="1">{
+        clientConfig := &amp;ClientConfig{
+                BrokerList: brokerList,
+        }
+        return NewWithConfigAndClient(clientConfig, httpClient)
+}</span>
+
+// NewFromZookeeper create a new Pinot connection through Pinot Zookeeper.
+func NewFromZookeeper(zkPath []string, zkPathPrefix string, pinotCluster string) (*Connection, error) <span class="cov8" title="1">{
+        return NewFromZookeeperAndClient(zkPath, zkPathPrefix, pinotCluster, http.DefaultClient)
+}</span>
+
+// NewFromZookeeperAndClient create a new Pinot connection through Pinot Zookeeper and http client.
+func NewFromZookeeperAndClient(zkPath []string, zkPathPrefix string, pinotCluster string, httpClient *http.Client) (*Connection, error) <span class="cov8" title="1">{
+        clientConfig := &amp;ClientConfig{
+                ZkConfig: &amp;ZookeeperConfig{
+                        ZookeeperPath:     zkPath,
+                        PathPrefix:        strings.Join([]string{zkPathPrefix, pinotCluster}, "/"),
+                        SessionTimeoutSec: defaultZkSessionTimeoutSec,
+                },
+        }
+        return NewWithConfigAndClient(clientConfig, httpClient)
+}</span>
+
+// NewFromController creates a new Pinot connection that periodically fetches available brokers via the Controller API.
+func NewFromController(controllerAddress string) (*Connection, error) <span class="cov8" title="1">{
+        return NewFromControllerAndClient(controllerAddress, http.DefaultClient)
+}</span>
+
+// NewFromControllerAndClient creates a new Pinot connection that periodically fetches available brokers via the Controller API.
+func NewFromControllerAndClient(controllerAddress string, httpClient *http.Client) (*Connection, error) <span class="cov8" title="1">{
+        clientConfig := &amp;ClientConfig{
+                ControllerConfig: &amp;ControllerConfig{
+                        ControllerAddress: controllerAddress,
+                },
+        }
+        return NewWithConfigAndClient(clientConfig, httpClient)
+}</span>
+
+// NewWithConfig create a new Pinot connection.
+func NewWithConfig(config *ClientConfig) (*Connection, error) <span class="cov8" title="1">{
+        return NewWithConfigAndClient(config, http.DefaultClient)
+}</span>
+
+// NewWithConfigAndClient create a new Pinot connection with pre-created http client.
+func NewWithConfigAndClient(config *ClientConfig, httpClient *http.Client) (*Connection, error) <span class="cov8" title="1">{
+        transport := &amp;jsonAsyncHTTPClientTransport{
+                client: httpClient,
+                header: config.ExtraHTTPHeader,
+        }
+
+        // Set HTTPTimeout from config
+        if config.HTTPTimeout != 0 </span><span class="cov8" title="1">{
+                transport.client.Timeout = config.HTTPTimeout
+        }</span>
+
+        <span class="cov8" title="1">var conn *Connection
+        if config.ZkConfig != nil </span><span class="cov8" title="1">{
+                conn = &amp;Connection{
+                        transport: transport,
+                        brokerSelector: &amp;dynamicBrokerSelector{
+                                zkConfig: config.ZkConfig,
+                        },
+                        useMultistageEngine: config.UseMultistageEngine,
+                }
+        }</span>
+        <span class="cov8" title="1">if len(config.BrokerList) &gt; 0 </span><span class="cov8" title="1">{
+                conn = &amp;Connection{
+                        transport: transport,
+                        brokerSelector: &amp;simpleBrokerSelector{
+                                brokerList: config.BrokerList,
+                        },
+                        useMultistageEngine: config.UseMultistageEngine,
+                }
+        }</span>
+        <span class="cov8" title="1">if config.ControllerConfig != nil </span><span class="cov8" title="1">{
+                conn = &amp;Connection{
+                        transport: transport,
+                        brokerSelector: &amp;controllerBasedSelector{
+                                config: config.ControllerConfig,
+                                client: http.DefaultClient,
+                        },
+                        useMultistageEngine: config.UseMultistageEngine,
+                }
+        }</span>
+        <span class="cov8" title="1">if conn != nil </span><span class="cov8" title="1">{
+                // TODO: error handling results into `make test` failure.
+                if err := conn.brokerSelector.init(); err != nil </span><span class="cov8" title="1">{
+                        return conn, fmt.Errorf("failed to initialize broker selector: %v", err)
+                }</span>
+                <span class="cov8" title="1">return conn, nil</span>
+        }
+        <span class="cov8" title="1">return nil, fmt.Errorf(
+                "please specify at least one of Pinot Zookeeper, Pinot Broker or Pinot Controller to connect",
+        )</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package pinot
+
+import (
+        "fmt"
+        "io"
+        "net/http"
+        "strings"
+        "time"
+
+        log "github.com/sirupsen/logrus"
+)
+
+const (
+        controllerAPIEndpoint = "/v2/brokers/tables?state=ONLINE"
+        defaultUpdateFreqMs   = 1000
+)
+
+var (
+        controllerDefaultHTTPHeader = map[string]string{
+                "Accept": "application/json",
+        }
+)
+
+// HTTPClient is an interface for http.Client
+type HTTPClient interface {
+        Do(req *http.Request) (*http.Response, error)
+}
+
+type controllerBasedSelector struct {
+        client              HTTPClient
+        config              *ControllerConfig
+        controllerAPIReqURL string
+        tableAwareBrokerSelector
+}
+
+func (s *controllerBasedSelector) init() error <span class="cov8" title="1">{
+        if s.config.UpdateFreqMs == 0 </span><span class="cov8" title="1">{
+                s.config.UpdateFreqMs = defaultUpdateFreqMs
+        }</span>
+        <span class="cov8" title="1">var err error
+        s.controllerAPIReqURL, err = getControllerRequestURL(s.config.ControllerAddress)
+        if err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("an error occurred when parsing controller address: %v", err)
+        }</span>
+
+        <span class="cov8" title="1">if err = s.updateBrokerData(); err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("an error occurred when fetching broker data from controller API: %v", err)
+        }</span>
+        <span class="cov8" title="1">go s.setupInterval()
+        return nil</span>
+}
+
+func (s *controllerBasedSelector) setupInterval() <span class="cov8" title="1">{
+        lastInvocation := time.Now()
+        for </span><span class="cov8" title="1">{
+                nextInvocation := lastInvocation.Add(
+                        time.Duration(s.config.UpdateFreqMs) * time.Millisecond,
+                )
+                untilNextInvocation := time.Until(nextInvocation)
+                time.Sleep(untilNextInvocation)
+
+                err := s.updateBrokerData()
+                if err != nil </span><span class="cov0" title="0">{
+                        log.Errorf("Caught exception when updating broker data, Error: %v", err)
+                }</span>
+
+                <span class="cov8" title="1">lastInvocation = time.Now()</span>
+        }
+}
+
+func getControllerRequestURL(controllerAddress string) (string, error) <span class="cov8" title="1">{
+        tokenized := strings.Split(controllerAddress, "://")
+        addressWithScheme := controllerAddress
+        if len(tokenized) &gt; 1 </span><span class="cov8" title="1">{
+                scheme := tokenized[0]
+                if scheme != "https" &amp;&amp; scheme != "http" </span><span class="cov8" title="1">{
+                        return "", fmt.Errorf(
+                                "Unsupported controller URL scheme: %s, only http (default) and https are allowed",
+                                scheme,
+                        )
+                }</span>
+        } else<span class="cov8" title="1"> {
+                addressWithScheme = "http://" + controllerAddress
+        }</span>
+        <span class="cov8" title="1">return strings.TrimSuffix(addressWithScheme, "/") + controllerAPIEndpoint, nil</span>
+}
+
+func (s *controllerBasedSelector) createControllerRequest() (*http.Request, error) <span class="cov8" title="1">{
+        r, err := http.NewRequest("GET", s.controllerAPIReqURL, nil)
+        if err != nil </span><span class="cov0" title="0">{
+                return r, fmt.Errorf("Caught exception when creating controller API request: %v", err)
+        }</span>
+        <span class="cov8" title="1">for k, v := range controllerDefaultHTTPHeader </span><span class="cov8" title="1">{
+                r.Header.Add(k, v)
+        }</span>
+        <span class="cov8" title="1">for k, v := range s.config.ExtraControllerAPIHeaders </span><span class="cov8" title="1">{
+                r.Header.Add(k, v)
+        }</span>
+        <span class="cov8" title="1">return r, nil</span>
+}
+
+func (s *controllerBasedSelector) updateBrokerData() error <span class="cov8" title="1">{
+        r, err := s.createControllerRequest()
+        if err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov8" title="1">resp, err := s.client.Do(r)
+        if err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("Got exceptions while sending controller API request: %v", err)
+        }</span>
+        <span class="cov8" title="1">defer func() </span><span class="cov8" title="1">{
+                if err := resp.Body.Close(); err != nil </span><span class="cov0" title="0">{
+                        log.Error("Unable to close response body. ", err)
+                }</span>
+        }()
+        <span class="cov8" title="1">if resp.StatusCode == http.StatusOK </span><span class="cov8" title="1">{
+                bodyBytes, err := io.ReadAll(resp.Body)
+                if err != nil </span><span class="cov8" title="1">{
+                        return fmt.Errorf("An error occurred when reading controller API response: %v", err)
+                }</span>
+                <span class="cov8" title="1">var c controllerResponse
+                if err = decodeJSONWithNumber(bodyBytes, &amp;c); err != nil </span><span class="cov8" title="1">{
+                        return fmt.Errorf("An error occurred when decoding controller API response: %v", err)
+                }</span>
+                <span class="cov8" title="1">s.rwMux.Lock()
+                s.allBrokerList = c.extractBrokerList()
+                s.tableBrokerMap = c.extractTableToBrokerMap()
+                s.rwMux.Unlock()
+                return nil</span>
+        }
+        <span class="cov8" title="1">return fmt.Errorf("Controller API returned HTTP status code %v", resp.StatusCode)</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package pinot
+
+import (
+        "strconv"
+        "strings"
+)
+
+type brokerDto struct {
+        Host         string `json:"host"`
+        InstanceName string `json:"instanceName"`
+        Port         int    `json:"port"`
+}
+
+type controllerResponse map[string]([]brokerDto)
+
+func (b *brokerDto) extractBrokerName() string <span class="cov8" title="1">{
+        return strings.Join([]string{b.Host, strconv.Itoa(b.Port)}, ":")
+}</span>
+
+func (r *controllerResponse) extractBrokerList() []string <span class="cov8" title="1">{
+        brokerSet := map[string]struct{}{}
+        for _, brokers := range *r </span><span class="cov8" title="1">{
+                for _, broker := range brokers </span><span class="cov8" title="1">{
+                        brokerSet[broker.extractBrokerName()] = struct{}{}
+                }</span>
+        }
+        <span class="cov8" title="1">brokerList := make([]string, 0, len(brokerSet))
+
+        for key := range brokerSet </span><span class="cov8" title="1">{
+                brokerList = append(brokerList, key)
+        }</span>
+        <span class="cov8" title="1">return brokerList</span>
+}
+
+func (r *controllerResponse) extractTableToBrokerMap() map[string]([]string) <span class="cov8" title="1">{
+        tableToBrokerMap := make(map[string]([]string))
+        for table, brokers := range *r </span><span class="cov8" title="1">{
+                brokersPerTable := make([]string, 0, len(brokers))
+                for _, broker := range brokers </span><span class="cov8" title="1">{
+                        brokersPerTable = append(brokersPerTable, broker.extractBrokerName())
+                }</span>
+                <span class="cov8" title="1">tableToBrokerMap[table] = brokersPerTable</span>
+        }
+        <span class="cov8" title="1">return tableToBrokerMap</span>
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package pinot
+
+import (
+        "encoding/json"
+        "fmt"
+        "strconv"
+        "strings"
+        "time"
+
+        zk "github.com/go-zookeeper/zk"
+
+        log "github.com/sirupsen/logrus"
+)
+
+const (
+        brokerExternalViewPath = "EXTERNALVIEW/brokerResource"
+)
+
+// ReadZNode reads a ZNode content as bytes from Zookeeper
+type ReadZNode func(path string) ([]byte, error)
+
+type dynamicBrokerSelector struct {
+        zkConfig               *ZookeeperConfig
+        zkConn                 *zk.Conn
+        externalViewZnodeWatch &lt;-chan zk.Event
+        readZNode              ReadZNode
+        externalViewZkPath     string
+        tableAwareBrokerSelector
+}
+
+type externalView struct {
+        SimpleFields map[string]string              `json:"simpleFields"`
+        MapFields    map[string](map[string]string) `json:"mapFields"`
+        ListFields   map[string]([]string)          `json:"listFields"`
+        ID           string                         `json:"id"`
+}
+
+func (s *dynamicBrokerSelector) init() error <span class="cov8" title="1">{
+        var err error
+        s.zkConn, _, err = zk.Connect(s.zkConfig.ZookeeperPath, time.Duration(s.zkConfig.SessionTimeoutSec)*time.Second)
+        if err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("failed to connect to zookeeper: %v, error: %v", s.zkConfig.ZookeeperPath, err)
+        }</span>
+        <span class="cov8" title="1">s.readZNode = func(_ string) ([]byte, error) </span><span class="cov0" title="0">{
+                node, _, err2 := s.zkConn.Get(s.externalViewZkPath)
+                if err2 != nil </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("failed to read zk: %s, ExternalView path: %s, error: %v", s.zkConfig.ZookeeperPath, s.externalViewZkPath, err2)
+                }</span>
+                <span class="cov0" title="0">return node, nil</span>
+        }
+        <span class="cov8" title="1">s.externalViewZkPath = s.zkConfig.PathPrefix + "/" + brokerExternalViewPath
+        _, _, s.externalViewZnodeWatch, err = s.zkConn.GetW(s.externalViewZkPath)
+        if err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("failed to set a watcher on ExternalView path: %s, error: %v", strings.Join(append(s.zkConfig.ZookeeperPath, s.externalViewZkPath), ""), err)
+        }</span>
+        <span class="cov0" title="0">if err = s.refreshExternalView(); err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+        <span class="cov0" title="0">go s.setupWatcher()
+        return nil</span>
+}
+
+func (s *dynamicBrokerSelector) setupWatcher() <span class="cov8" title="1">{
+        for </span><span class="cov8" title="1">{
+                ev := &lt;-s.externalViewZnodeWatch
+                if ev.Err != nil </span><span class="cov0" title="0">{
+                        log.Error("GetW watcher error", ev.Err)
+                }</span> else<span class="cov8" title="1"> if ev.Type == zk.EventNodeDataChanged </span><span class="cov8" title="1">{
+                        if err := s.refreshExternalView(); err != nil </span><span class="cov0" title="0">{
+                                log.Errorf("Failed to refresh ExternalView, Error: %v\n", err)
+                        }</span>
+                }
+                <span class="cov8" title="1">time.Sleep(100 * time.Millisecond)</span>
+        }
+}
+
+func (s *dynamicBrokerSelector) refreshExternalView() error <span class="cov8" title="1">{
+        if s.readZNode == nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("No method defined to read from a ZNode")
+        }</span>
+        <span class="cov8" title="1">node, err := s.readZNode(s.externalViewZkPath)
+        if err != nil </span><span class="cov8" title="1">{
+                return err
+        }</span>
+        <span class="cov8" title="1">ev, err := getExternalView(node)
+        if err != nil </span><span class="cov8" title="1">{
+                return err
+        }</span>
+        <span class="cov8" title="1">newTableBrokerMap, newAllBrokerList := generateNewBrokerMappingExternalView(ev)
+        s.rwMux.Lock()
+        s.tableBrokerMap = newTableBrokerMap
+        s.allBrokerList = newAllBrokerList
+        s.rwMux.Unlock()
+        return nil</span>
+}
+
+func getExternalView(evBytes []byte) (*externalView, error) <span class="cov8" title="1">{
+        var ev externalView
+        if err := json.Unmarshal(evBytes, &amp;ev); err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("failed to unmarshal ExternalView: %s, Error: %v", evBytes, err)
+        }</span>
+        <span class="cov8" title="1">return &amp;ev, nil</span>
+}
+
+func generateNewBrokerMappingExternalView(ev *externalView) (map[string]([]string), []string) <span class="cov8" title="1">{
+        tableBrokerMap := map[string]([]string){}
+        allBrokerList := []string{}
+        for table, brokerMapping := range ev.MapFields </span><span class="cov8" title="1">{
+                tableName := extractTableName(table)
+                tableBrokerMap[tableName] = extractBrokers(brokerMapping)
+                allBrokerList = append(allBrokerList, tableBrokerMap[tableName]...)
+        }</span>
+        <span class="cov8" title="1">return tableBrokerMap, allBrokerList</span>
+}
+
+func extractBrokers(brokerMap map[string]string) []string <span class="cov8" title="1">{
+        brokerList := []string{}
+        for brokerName, status := range brokerMap </span><span class="cov8" title="1">{
+                if status == "ONLINE" </span><span class="cov8" title="1">{
+                        host, port, err := extractBrokerHostPort(brokerName)
+                        if err == nil </span><span class="cov8" title="1">{
+                                brokerList = append(brokerList, strings.Join([]string{host, port}, ":"))
+                        }</span>
+                }
+        }
+        <span class="cov8" title="1">return brokerList</span>
+}
+
+func extractBrokerHostPort(brokerKey string) (string, string, error) <span class="cov8" title="1">{
+        splits := strings.Split(brokerKey, "_")
+        if len(splits) &lt; 2 </span><span class="cov8" title="1">{
+                return "", "", fmt.Errorf("invalid Broker Key: %s, should be in the format of Broker_[hostname]_[port]", brokerKey)
+        }</span>
+        <span class="cov8" title="1">_, err := strconv.Atoi(splits[len(splits)-1])
+        if err != nil </span><span class="cov8" title="1">{
+                return "", "", fmt.Errorf("failed to parse broker port:%s to integer, Error: %v", splits[len(splits)-1], err)
+        }</span>
+        <span class="cov8" title="1">return splits[len(splits)-2], splits[len(splits)-1], nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package pinot
+
+import (
+        "bytes"
+        "encoding/json"
+)
+
+// decodeJSONWithNumber use the UseNumber option in std json, which works
+// by first decode number into string, then back to converted type
+// see implementation of json.Number in std
+func decodeJSONWithNumber(bodyBytes []byte, out interface{}) error <span class="cov8" title="1">{
+        decoder := json.NewDecoder(bytes.NewReader(bodyBytes))
+        decoder.UseNumber()
+        if err := decoder.Decode(out); err != nil </span><span class="cov8" title="1">{
+                return err
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package pinot
+
+import (
+        "bytes"
+        "encoding/json"
+        "fmt"
+        "io"
+        "net/http"
+        "strings"
+
+        log "github.com/sirupsen/logrus"
+)
+
+var (
+        defaultHTTPHeader = map[string]string{
+                "Content-Type": "application/json; charset=utf-8",
+        }
+)
+
+// jsonAsyncHTTPClientTransport is the impl of clientTransport
+type jsonAsyncHTTPClientTransport struct {
+        client *http.Client
+        header map[string]string
+}
+
+func (t jsonAsyncHTTPClientTransport) buildQueryOptions(query *Request) string <span class="cov8" title="1">{
+        queryOptions := ""
+        if query.queryFormat == "sql" </span><span class="cov8" title="1">{
+                queryOptions = "groupByMode=sql;responseFormat=sql"
+        }</span>
+        <span class="cov8" title="1">if query.useMultistageEngine </span><span class="cov8" title="1">{
+                if queryOptions != "" </span><span class="cov8" title="1">{
+                        queryOptions += ";"
+                }</span>
+                <span class="cov8" title="1">queryOptions += "useMultistageEngine=true"</span>
+        }
+        <span class="cov8" title="1">if t.client.Timeout &gt; 0 </span><span class="cov8" title="1">{
+                if queryOptions != "" </span><span class="cov8" title="1">{
+                        queryOptions += ";"
+                }</span>
+                <span class="cov8" title="1">queryOptions += fmt.Sprintf("timeoutMs=%d", t.client.Timeout.Milliseconds())</span>
+        }
+        <span class="cov8" title="1">return queryOptions</span>
+}
+
+func (t jsonAsyncHTTPClientTransport) execute(brokerAddress string, query *Request) (*BrokerResponse, error) <span class="cov8" title="1">{
+        url := fmt.Sprintf(getQueryTemplate(query.queryFormat, brokerAddress), brokerAddress)
+        requestJSON := map[string]string{}
+        requestJSON[query.queryFormat] = query.query
+        queryOptions := t.buildQueryOptions(query)
+        if queryOptions != "" </span><span class="cov8" title="1">{
+                requestJSON["queryOptions"] = queryOptions
+        }</span>
+        <span class="cov8" title="1">if query.trace </span><span class="cov8" title="1">{
+                requestJSON["trace"] = "true"
+        }</span>
+        <span class="cov8" title="1">jsonValue, err := json.Marshal(requestJSON)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Error("Unable to marshal request to JSON. ", err)
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">req, err := createHTTPRequest(url, jsonValue, t.header)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">resp, err := t.client.Do(req)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("got exceptions during sending request. %w", err)
+        }</span>
+        <span class="cov8" title="1">defer func() </span><span class="cov8" title="1">{
+                if err := resp.Body.Close(); err != nil </span><span class="cov0" title="0">{
+                        log.Error("Got exceptions during closing response body. ", err)
+                }</span>
+        }()
+        <span class="cov8" title="1">if resp.StatusCode == http.StatusOK </span><span class="cov8" title="1">{
+                bodyBytes, err := io.ReadAll(resp.Body)
+                if err != nil </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("unable to read Pinot response. %w", err)
+                }</span>
+                <span class="cov8" title="1">var brokerResponse BrokerResponse
+                if err = decodeJSONWithNumber(bodyBytes, &amp;brokerResponse); err != nil </span><span class="cov8" title="1">{
+                        return nil, fmt.Errorf("unable to unmarshal json response to a brokerResponse structure. %v", err)
+                }</span>
+                <span class="cov8" title="1">return &amp;brokerResponse, nil</span>
+        }
+        <span class="cov8" title="1">return nil, fmt.Errorf("caught http exception when querying Pinot: %v", resp.Status)</span>
+}
+
+func getQueryTemplate(queryFormat string, brokerAddress string) string <span class="cov8" title="1">{
+        if queryFormat == "sql" </span><span class="cov8" title="1">{
+                if strings.HasPrefix(brokerAddress, "http://") || strings.HasPrefix(brokerAddress, "https://") </span><span class="cov8" title="1">{
+                        return "%s/query/sql"
+                }</span>
+                <span class="cov8" title="1">return "http://%s/query/sql"</span>
+        }
+        <span class="cov8" title="1">if strings.HasPrefix(brokerAddress, "http://") || strings.HasPrefix(brokerAddress, "https://") </span><span class="cov8" title="1">{
+                return "%s/query"
+        }</span>
+        <span class="cov8" title="1">return "http://%s/query"</span>
+}
+
+func createHTTPRequest(url string, jsonValue []byte, extraHeader map[string]string) (*http.Request, error) <span class="cov8" title="1">{
+        r, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("invalid HTTP request: %w", err)
+        }</span>
+        <span class="cov8" title="1">for k, v := range defaultHTTPHeader </span><span class="cov8" title="1">{
+                r.Header.Add(k, v)
+        }</span>
+        <span class="cov8" title="1">for k, v := range extraHeader </span><span class="cov8" title="1">{
+                r.Header.Add(k, v)
+        }</span>
+        <span class="cov8" title="1">return r, nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package pinot
+
+import (
+        "fmt"
+        "strings"
+        "sync"
+)
+
+// PreparedStatement represents a prepared statement with bind variables that can be executed multiple times
+// with different parameter values. It's similar to database/sql.Stmt but adapted for Pinot.
+type PreparedStatement interface {
+        // SetString sets the parameter at the given index to the given string value
+        SetString(parameterIndex int, value string) error
+
+        // SetInt sets the parameter at the given index to the given int value
+        SetInt(parameterIndex int, value int) error
+
+        // SetInt64 sets the parameter at the given index to the given int64 value
+        SetInt64(parameterIndex int, value int64) error
+
+        // SetFloat64 sets the parameter at the given index to the given float64 value
+        SetFloat64(parameterIndex int, value float64) error
+
+        // SetBool sets the parameter at the given index to the given bool value
+        SetBool(parameterIndex int, value bool) error
+
+        // Set sets the parameter at the given index to the given value (any supported type)
+        Set(parameterIndex int, value interface{}) error
+
+        // Execute executes the prepared statement with the currently set parameters
+        Execute() (*BrokerResponse, error)
+
+        // ExecuteWithParams executes the prepared statement with the given parameters
+        // This is a convenience method that sets all parameters and executes in one call
+        ExecuteWithParams(params ...interface{}) (*BrokerResponse, error)
+
+        // GetQuery returns the original query template
+        GetQuery() string
+
+        // GetParameterCount returns the number of parameters in the prepared statement
+        GetParameterCount() int
+
+        // ClearParameters clears all currently set parameters
+        ClearParameters() error
+
+        // Close closes the prepared statement and releases any associated resources
+        Close() error
+}
+
+// preparedStatement is the concrete implementation of PreparedStatement
+type preparedStatement struct {
+        connection    *Connection
+        table         string
+        queryTemplate string
+        queryParts    []string // Query split by '?' placeholders
+        paramCount    int
+        parameters    []interface{}
+        mutex         sync.RWMutex
+        closed        bool
+}
+
+// Prepare creates a new PreparedStatement for the given table and query template.
+// The query template should use '?' as placeholders for parameters.
+// Example: "SELECT * FROM table WHERE column1 = ? AND column2 = ?"
+func (c *Connection) Prepare(table string, queryTemplate string) (PreparedStatement, error) <span class="cov8" title="1">{
+        if table == "" </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("table name cannot be empty")
+        }</span>
+        <span class="cov8" title="1">if queryTemplate == "" </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("query template cannot be empty")
+        }</span>
+
+        // Split the query by '?' to prepare for parameter substitution
+        <span class="cov8" title="1">parts := strings.Split(queryTemplate, "?")
+        paramCount := len(parts) - 1
+
+        if paramCount == 0 </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("query template must contain at least one parameter placeholder (?)")
+        }</span>
+
+        <span class="cov8" title="1">return &amp;preparedStatement{
+                connection:    c,
+                table:         table,
+                queryTemplate: queryTemplate,
+                queryParts:    parts,
+                paramCount:    paramCount,
+                parameters:    make([]interface{}, paramCount),
+                closed:        false,
+        }, nil</span>
+}
+
+// SetString sets the parameter at the given index to the given string value
+func (ps *preparedStatement) SetString(parameterIndex int, value string) error <span class="cov8" title="1">{
+        return ps.Set(parameterIndex, value)
+}</span>
+
+// SetInt sets the parameter at the given index to the given int value
+func (ps *preparedStatement) SetInt(parameterIndex int, value int) error <span class="cov8" title="1">{
+        return ps.Set(parameterIndex, value)
+}</span>
+
+// SetInt64 sets the parameter at the given index to the given int64 value
+func (ps *preparedStatement) SetInt64(parameterIndex int, value int64) error <span class="cov8" title="1">{
+        return ps.Set(parameterIndex, value)
+}</span>
+
+// SetFloat64 sets the parameter at the given index to the given float64 value
+func (ps *preparedStatement) SetFloat64(parameterIndex int, value float64) error <span class="cov8" title="1">{
+        return ps.Set(parameterIndex, value)
+}</span>
+
+// SetBool sets the parameter at the given index to the given bool value
+func (ps *preparedStatement) SetBool(parameterIndex int, value bool) error <span class="cov8" title="1">{
+        return ps.Set(parameterIndex, value)
+}</span>
+
+// Set sets the parameter at the given index to the given value (any supported type)
+func (ps *preparedStatement) Set(parameterIndex int, value interface{}) error <span class="cov8" title="1">{
+        ps.mutex.Lock()
+        defer ps.mutex.Unlock()
+
+        if ps.closed </span><span class="cov8" title="1">{
+                return fmt.Errorf("prepared statement is closed")
+        }</span>
+
+        <span class="cov8" title="1">if parameterIndex &lt; 1 || parameterIndex &gt; ps.paramCount </span><span class="cov8" title="1">{
+                return fmt.Errorf("parameter index %d is out of range [1, %d]", parameterIndex, ps.paramCount)
+        }</span>
+
+        // Convert to 0-based index
+        <span class="cov8" title="1">ps.parameters[parameterIndex-1] = value
+        return nil</span>
+}
+
+// Execute executes the prepared statement with the currently set parameters
+func (ps *preparedStatement) Execute() (*BrokerResponse, error) <span class="cov8" title="1">{
+        ps.mutex.RLock()
+        defer ps.mutex.RUnlock()
+
+        if ps.closed </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("prepared statement is closed")
+        }</span>
+
+        // Check if all parameters are set
+        <span class="cov8" title="1">for i, param := range ps.parameters </span><span class="cov8" title="1">{
+                if param == nil </span><span class="cov8" title="1">{
+                        return nil, fmt.Errorf("parameter at index %d is not set", i+1)
+                }</span>
+        }
+
+        // Build the final query
+        <span class="cov8" title="1">query, err := ps.buildQuery(ps.parameters)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to build query: %v", err)
+        }</span>
+
+        // Execute the query using the connection
+        <span class="cov8" title="1">return ps.connection.ExecuteSQL(ps.table, query)</span>
+}
+
+// ExecuteWithParams executes the prepared statement with the given parameters
+// This is a convenience method that sets all parameters and executes in one call
+func (ps *preparedStatement) ExecuteWithParams(params ...interface{}) (*BrokerResponse, error) <span class="cov8" title="1">{
+        ps.mutex.Lock()
+        defer ps.mutex.Unlock()
+
+        if ps.closed </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("prepared statement is closed")
+        }</span>
+
+        <span class="cov8" title="1">if len(params) != ps.paramCount </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("expected %d parameters, got %d", ps.paramCount, len(params))
+        }</span>
+
+        // Build the final query
+        <span class="cov8" title="1">query, err := ps.buildQuery(params)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to build query: %v", err)
+        }</span>
+
+        // Execute the query using the connection
+        <span class="cov8" title="1">return ps.connection.ExecuteSQL(ps.table, query)</span>
+}
+
+// GetQuery returns the original query template
+func (ps *preparedStatement) GetQuery() string <span class="cov8" title="1">{
+        return ps.queryTemplate
+}</span>
+
+// GetParameterCount returns the number of parameters in the prepared statement
+func (ps *preparedStatement) GetParameterCount() int <span class="cov8" title="1">{
+        return ps.paramCount
+}</span>
+
+// ClearParameters clears all currently set parameters
+func (ps *preparedStatement) ClearParameters() error <span class="cov8" title="1">{
+        ps.mutex.Lock()
+        defer ps.mutex.Unlock()
+
+        if ps.closed </span><span class="cov8" title="1">{
+                return fmt.Errorf("prepared statement is closed")
+        }</span>
+
+        <span class="cov8" title="1">for i := range ps.parameters </span><span class="cov8" title="1">{
+                ps.parameters[i] = nil
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}
+
+// Close closes the prepared statement and releases any associated resources
+func (ps *preparedStatement) Close() error <span class="cov8" title="1">{
+        ps.mutex.Lock()
+        defer ps.mutex.Unlock()
+
+        ps.closed = true
+        ps.parameters = nil
+        return nil
+}</span>
+
+// buildQuery builds the final SQL query by substituting parameters
+func (ps *preparedStatement) buildQuery(params []interface{}) (string, error) <span class="cov8" title="1">{
+        if len(params) != ps.paramCount </span><span class="cov0" title="0">{
+                return "", fmt.Errorf("expected %d parameters, got %d", ps.paramCount, len(params))
+        }</span>
+
+        <span class="cov8" title="1">var query strings.Builder
+        for i, part := range ps.queryParts[:len(ps.queryParts)-1] </span><span class="cov8" title="1">{
+                query.WriteString(part)
+                formattedParam, err := formatArg(params[i])
+                if err != nil </span><span class="cov0" title="0">{
+                        return "", fmt.Errorf("failed to format parameter at index %d: %v", i+1, err)
+                }</span>
+                <span class="cov8" title="1">query.WriteString(formattedParam)</span>
+        }
+        // Add the last part of the query, which does not follow a '?'
+        <span class="cov8" title="1">query.WriteString(ps.queryParts[len(ps.queryParts)-1])
+        return query.String(), nil</span>
+} </pre>
+		
+		<pre class="file" id="file8" style="display: none">package pinot
+
+import (
+        "math"
+
+        "encoding/json"
+
+        log "github.com/sirupsen/logrus"
+)
+
+// BrokerResponse is the data structure for broker response.
+type BrokerResponse struct {
+        SelectionResults            *SelectionResults    `json:"SelectionResults,omitempty"`
+        ResultTable                 *ResultTable         `json:"resultTable,omitempty"`
+        TraceInfo                   map[string]string    `json:"traceInfo,omitempty"`
+        AggregationResults          []*AggregationResult `json:"aggregationResults,omitempty"`
+        Exceptions                  []Exception          `json:"exceptions"`
+        NumSegmentsProcessed        int                  `json:"numSegmentsProcessed"`
+        NumServersResponded         int                  `json:"numServersResponded"`
+        NumSegmentsQueried          int                  `json:"numSegmentsQueried"`
+        NumServersQueried           int                  `json:"numServersQueried"`
+        NumSegmentsMatched          int                  `json:"numSegmentsMatched"`
+        NumConsumingSegmentsQueried int                  `json:"numConsumingSegmentsQueried"`
+        NumDocsScanned              int64                `json:"numDocsScanned"`
+        NumEntriesScannedInFilter   int64                `json:"numEntriesScannedInFilter"`
+        NumEntriesScannedPostFilter int64                `json:"numEntriesScannedPostFilter"`
+        TotalDocs                   int64                `json:"totalDocs"`
+        TimeUsedMs                  int                  `json:"timeUsedMs"`
+        MinConsumingFreshnessTimeMs int64                `json:"minConsumingFreshnessTimeMs"`
+        NumGroupsLimitReached       bool                 `json:"numGroupsLimitReached"`
+}
+
+// AggregationResult is the data structure for PQL aggregation result
+type AggregationResult struct {
+        Function       string       `json:"function"`
+        Value          string       `json:"value,omitempty"`
+        GroupByColumns []string     `json:"groupByColumns,omitempty"`
+        GroupByResult  []GroupValue `json:"groupByResult,omitempty"`
+}
+
+// GroupValue is the data structure for PQL aggregation GroupBy result
+type GroupValue struct {
+        Value string   `json:"value"`
+        Group []string `json:"group"`
+}
+
+// SelectionResults is the data structure for PQL selection result
+type SelectionResults struct {
+        Columns []string        `json:"columns"`
+        Results [][]interface{} `json:"results"`
+}
+
+// RespSchema is response schema
+type RespSchema struct {
+        ColumnDataTypes []string `json:"columnDataTypes"`
+        ColumnNames     []string `json:"columnNames"`
+}
+
+// Exception is Pinot exceptions.
+type Exception struct {
+        Message   string `json:"message"`
+        ErrorCode int    `json:"errorCode"`
+}
+
+// ResultTable is a ResultTable
+type ResultTable struct {
+        DataSchema RespSchema      `json:"dataSchema"`
+        Rows       [][]interface{} `json:"rows"`
+}
+
+// GetRowCount returns how many rows in the ResultTable
+func (r ResultTable) GetRowCount() int <span class="cov8" title="1">{
+        return len(r.Rows)
+}</span>
+
+// GetColumnCount returns how many columns in the ResultTable
+func (r ResultTable) GetColumnCount() int <span class="cov8" title="1">{
+        return len(r.DataSchema.ColumnNames)
+}</span>
+
+// GetColumnName returns column name given column index
+func (r ResultTable) GetColumnName(columnIndex int) string <span class="cov8" title="1">{
+        return r.DataSchema.ColumnNames[columnIndex]
+}</span>
+
+// GetColumnDataType returns column data type given column index
+func (r ResultTable) GetColumnDataType(columnIndex int) string <span class="cov8" title="1">{
+        return r.DataSchema.ColumnDataTypes[columnIndex]
+}</span>
+
+// Get returns a ResultTable entry given row index and column index
+func (r ResultTable) Get(rowIndex int, columnIndex int) interface{} <span class="cov8" title="1">{
+        return r.Rows[rowIndex][columnIndex]
+}</span>
+
+// GetString returns a ResultTable string entry given row index and column index
+func (r ResultTable) GetString(rowIndex int, columnIndex int) string <span class="cov8" title="1">{
+        if col, ok := (r.Rows[rowIndex][columnIndex]).(string); ok </span><span class="cov8" title="1">{
+                return col
+        }</span>
+        <span class="cov0" title="0">log.Errorf("Error converting to string: %v", r.Rows[rowIndex][columnIndex])
+        return ""</span>
+}
+
+// GetInt returns a ResultTable int entry given row index and column index
+func (r ResultTable) GetInt(rowIndex int, columnIndex int) int32 <span class="cov8" title="1">{
+        if col, ok := (r.Rows[rowIndex][columnIndex]).(json.Number); ok </span><span class="cov8" title="1">{
+                val, err := col.Int64()
+                if err != nil </span><span class="cov8" title="1">{
+                        log.Errorf("Error converting to long: %v", err)
+                        return 0
+                }</span>
+                <span class="cov8" title="1">if val &lt; int64(math.MinInt32) || val &gt; int64(math.MaxInt32) </span><span class="cov0" title="0">{
+                        log.Errorf("Error converting to int: %v", val)
+                        return 0
+                }</span>
+                <span class="cov8" title="1">return int32(val)</span>
+        }
+        <span class="cov0" title="0">log.Errorf("Error converting to json.Number: %v", r.Rows[rowIndex][columnIndex])
+        return 0</span>
+}
+
+// GetLong returns a ResultTable long entry given row index and column index
+func (r ResultTable) GetLong(rowIndex int, columnIndex int) int64 <span class="cov8" title="1">{
+        if col, ok := (r.Rows[rowIndex][columnIndex]).(json.Number); ok </span><span class="cov8" title="1">{
+                val, err := col.Int64()
+                if err != nil </span><span class="cov8" title="1">{
+                        log.Errorf("Error converting to long: %v", err)
+                        return 0
+                }</span>
+                <span class="cov8" title="1">return val</span>
+        }
+        <span class="cov0" title="0">log.Errorf("Error converting to json.Number: %v", r.Rows[rowIndex][columnIndex])
+        return 0</span>
+}
+
+// GetFloat returns a ResultTable float entry given row index and column index
+func (r ResultTable) GetFloat(rowIndex int, columnIndex int) float32 <span class="cov8" title="1">{
+        if col, ok := (r.Rows[rowIndex][columnIndex]).(json.Number); ok </span><span class="cov8" title="1">{
+                val, err := col.Float64()
+                if err != nil </span><span class="cov8" title="1">{
+                        log.Errorf("Error converting to float: %v", err)
+                        return 0
+                }</span>
+                <span class="cov8" title="1">return float32(val)</span>
+        }
+        <span class="cov0" title="0">log.Errorf("Error converting to json.Number: %v", r.Rows[rowIndex][columnIndex])
+        return 0</span>
+}
+
+// GetDouble returns a ResultTable double entry given row index and column index
+func (r ResultTable) GetDouble(rowIndex int, columnIndex int) float64 <span class="cov8" title="1">{
+        if col, ok := (r.Rows[rowIndex][columnIndex]).(json.Number); ok </span><span class="cov8" title="1">{
+                val, err := col.Float64()
+                if err != nil </span><span class="cov8" title="1">{
+                        log.Errorf("Error converting to double: %v", err)
+                        return 0
+                }</span>
+                <span class="cov8" title="1">return val</span>
+        }
+        <span class="cov0" title="0">log.Errorf("Error converting to json.Number: %v", r.Rows[rowIndex][columnIndex])
+        return 0</span>
+}
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">package pinot
+
+import (
+        "fmt"
+        "math/rand"
+)
+
+type simpleBrokerSelector struct {
+        brokerList []string
+}
+
+func (s *simpleBrokerSelector) init() error <span class="cov8" title="1">{
+        if len(s.brokerList) == 0 </span><span class="cov8" title="1">{
+                return fmt.Errorf("No pre-configured broker lists set in simpleBrokerSelector")
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}
+
+func (s *simpleBrokerSelector) selectBroker(_ string) (string, error) <span class="cov8" title="1">{
+        if len(s.brokerList) == 0 </span><span class="cov8" title="1">{
+                return "", fmt.Errorf("No pre-configured broker lists set in simpleBrokerSelector")
+        }</span>
+        // #nosec G404
+        <span class="cov8" title="1">return s.brokerList[rand.Intn(len(s.brokerList))], nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file10" style="display: none">package pinot
+
+import (
+        "fmt"
+        "math/rand"
+        "strings"
+        "sync"
+)
+
+const (
+        offlineSuffix  = "_OFFLINE"
+        realtimeSuffix = "_REALTIME"
+)
+
+type tableAwareBrokerSelector struct {
+        tableBrokerMap map[string]([]string)
+        allBrokerList  []string
+        rwMux          sync.RWMutex
+}
+
+func (s *tableAwareBrokerSelector) selectBroker(table string) (string, error) <span class="cov8" title="1">{
+        tableName := extractTableName(table)
+        var brokerList []string
+        if tableName == "" </span><span class="cov8" title="1">{
+                s.rwMux.RLock()
+                brokerList = s.allBrokerList
+                s.rwMux.RUnlock()
+                if len(brokerList) == 0 </span><span class="cov8" title="1">{
+                        return "", fmt.Errorf("No available broker found")
+                }</span>
+        } else<span class="cov8" title="1"> {
+                var found bool
+                s.rwMux.RLock()
+                brokerList, found = s.tableBrokerMap[tableName]
+                s.rwMux.RUnlock()
+                if !found </span><span class="cov8" title="1">{
+                        return "", fmt.Errorf("Unable to find the table: %s", table)
+                }</span>
+                <span class="cov8" title="1">if len(brokerList) == 0 </span><span class="cov8" title="1">{
+                        return "", fmt.Errorf("No available broker found for table: %s", table)
+                }</span>
+        }
+        // #nosec G404
+        <span class="cov8" title="1">return brokerList[rand.Intn(len(brokerList))], nil</span>
+}
+
+func extractTableName(table string) string <span class="cov8" title="1">{
+        return strings.Replace(strings.Replace(table, offlineSuffix, "", 1), realtimeSuffix, "", 1)
+}</span>
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

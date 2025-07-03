@@ -1,10 +1,8 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
-	"time"
 
 	pinot "github.com/startreedata/pinot-client-go/pinot"
 )

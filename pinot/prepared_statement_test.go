@@ -123,7 +123,7 @@ func TestPreparedStatement_Execute_WithMockServer(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		assert.Equal(t, "POST", r.Method)
 		assert.True(t, strings.HasSuffix(r.RequestURI, "/query/sql"))
-		_, err := fmt.Fprintln(w, `{"resultTable":{"dataSchema":{"columnDataTypes":["LONG","STRING"],"columnNames":["id","name"]},"rows":[[123,"testName"]]},,"exceptions":[],"numServersQueried":1,"numServersResponded":1,"timeUsedMs":5}`)
+		_, err := fmt.Fprintln(w, `{"resultTable":{"dataSchema":{"columnDataTypes":["LONG","STRING"],"columnNames":["id","name"]},"rows":[[123,"testName"]]},"exceptions":[],"numServersQueried":1,"numServersResponded":1,"timeUsedMs":5}`)
 		assert.Nil(t, err)
 	}))
 	defer ts.Close()
