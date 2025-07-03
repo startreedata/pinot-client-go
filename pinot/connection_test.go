@@ -210,7 +210,7 @@ func TestFormatArg(t *testing.T) {
 
 	// Test case 2: time.Time value
 	value2 := time.Date(2022, time.January, 1, 12, 0, 0, 0, time.UTC)
-	expected2 := "'2022-01-01 12:00:00.000'"
+	expected2 := "1641038400000"
 	actual2, err := formatArg(value2)
 	assert.Nil(t, err)
 	assert.Equal(t, expected2, actual2)
