@@ -11,6 +11,7 @@ batch-quickstart
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
+coverage.html
 profile.cov
 
 # Dependency directories (remove the comment below to include it)
