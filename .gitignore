@@ -5,12 +5,15 @@
 *.so
 *.dylib
 batch-quickstart
+logs/
+examples/batch/
 
 # Test binary, built with `go test -c`
 *.test
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
+coverage.html
 profile.cov
 
 # Dependency directories (remove the comment below to include it)

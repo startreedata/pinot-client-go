@@ -164,3 +164,183 @@ func TestExceptionResponse(t *testing.T) {
 	assert.Equal(t, 200, brokerResponse.Exceptions[0].ErrorCode)
 	assert.True(t, strings.Contains(brokerResponse.Exceptions[0].Message, "QueryExecutionError:"))
 }
+
+func TestResultTableGetMethods(t *testing.T) {
+	// Test various edge cases and type conversions for Get* methods
+	resultTable := ResultTable{
+		DataSchema: RespSchema{
+			ColumnDataTypes: []string{"INT", "LONG", "FLOAT", "DOUBLE", "STRING", "INT", "LONG", "FLOAT", "DOUBLE", "STRING"},
+			ColumnNames:     []string{"int_val", "long_val", "float_val", "double_val", "string_val", "decimal_int", "decimal_long", "large_float", "large_double", "non_number"},
+		},
+		Rows: [][]interface{}{
+			{
+				json.Number("123"),                     // int_val: regular integer
+				json.Number("456789"),                  // long_val: regular long
+				json.Number("123.45"),                  // float_val: regular float
+				json.Number("789.123"),                 // double_val: regular double
+				json.Number("999"),                     // string_val: number as string
+				json.Number("42.0"),                    // decimal_int: decimal that should convert to int
+				json.Number("12345.0"),                 // decimal_long: decimal that should convert to long
+				json.Number("999999999999.0"),          // large_float: large number for float conversion
+				json.Number("1.7976931348623157e+308"), // large_double: very large double
+				"not_a_number",                         // non_number: string that's not a json.Number
+			},
+			{
+				json.Number("9223372036854775808"),  // out of range long (max_int64 + 1)
+				json.Number("-9223372036854775809"), // out of range long (min_int64 - 1)
+				json.Number("1e309"),                // out of range float (infinity)
+				json.Number("-1e309"),               // out of range double (negative infinity)
+				"string_value",                      // actual string
+				json.Number("42.5"),                 // non-whole number for int conversion
+				json.Number("123.7"),                // non-whole number for long conversion
+				json.Number("3.4028235e+39"),        // float32 max + 1 (out of range)
+				json.Number("inf"),                  // infinity string
+				123,                                 // non-json.Number integer
+			},
+		},
+	}
+
+	// Test row 0 - normal cases
+	assert.Equal(t, int32(123), resultTable.GetInt(0, 0))
+	assert.Equal(t, int64(456789), resultTable.GetLong(0, 1))
+	assert.Equal(t, float32(123.45), resultTable.GetFloat(0, 2))
+	assert.Equal(t, float64(789.123), resultTable.GetDouble(0, 3))
+	assert.Equal(t, "999", resultTable.GetString(0, 4))
+
+	// Test decimal to integer conversions
+	assert.Equal(t, int32(42), resultTable.GetInt(0, 5))     // 42.0 -> 42
+	assert.Equal(t, int64(12345), resultTable.GetLong(0, 6)) // 12345.0 -> 12345
+
+	// Test large number conversions
+	assert.Equal(t, float32(999999999999.0), resultTable.GetFloat(0, 7))
+	assert.Equal(t, float64(1.7976931348623157e+308), resultTable.GetDouble(0, 8))
+
+	// Test non-json.Number types
+	assert.Equal(t, "not_a_number", resultTable.GetString(0, 9))
+	assert.Equal(t, int32(0), resultTable.GetInt(0, 9))      // should return 0 for non-json.Number
+	assert.Equal(t, int64(0), resultTable.GetLong(0, 9))     // should return 0 for non-json.Number
+	assert.Equal(t, float32(0), resultTable.GetFloat(0, 9))  // should return 0 for non-json.Number
+	assert.Equal(t, float64(0), resultTable.GetDouble(0, 9)) // should return 0 for non-json.Number
+
+	// Test row 1 - edge cases and out-of-range values
+	assert.Equal(t, int64(0), resultTable.GetLong(1, 0))     // out of range long should return 0
+	assert.Equal(t, int64(0), resultTable.GetLong(1, 1))     // out of range long should return 0
+	assert.Equal(t, float32(0), resultTable.GetFloat(1, 2))  // out of range float should return 0
+	assert.Equal(t, float64(0), resultTable.GetDouble(1, 3)) // out of range double should return 0
+
+	assert.Equal(t, "string_value", resultTable.GetString(1, 4))
+
+	// Test non-whole decimal to integer conversions (should return 0)
+	assert.Equal(t, int32(0), resultTable.GetInt(1, 5))  // 42.5 is not whole number
+	assert.Equal(t, int64(0), resultTable.GetLong(1, 6)) // 123.7 is not whole number
+
+	// Test out of range float
+	assert.Equal(t, float32(0), resultTable.GetFloat(1, 7)) // out of range float32
+
+	// Test infinity double conversion
+	assert.Equal(t, float64(0), resultTable.GetDouble(1, 8)) // infinity should return 0
+
+	// Test non-json.Number integer
+	assert.Equal(t, "123", resultTable.GetString(1, 9))
+	assert.Equal(t, int32(0), resultTable.GetInt(1, 9))      // should return 0 for non-json.Number
+	assert.Equal(t, int64(0), resultTable.GetLong(1, 9))     // should return 0 for non-json.Number
+	assert.Equal(t, float32(0), resultTable.GetFloat(1, 9))  // should return 0 for non-json.Number
+	assert.Equal(t, float64(0), resultTable.GetDouble(1, 9)) // should return 0 for non-json.Number
+}
+
+func TestResultTableGetMethodsWithInvalidInput(t *testing.T) {
+	// Test with malformed JSON numbers and invalid inputs
+	resultTable := ResultTable{
+		DataSchema: RespSchema{
+			ColumnDataTypes: []string{"INT", "STRING", "DOUBLE"},
+			ColumnNames:     []string{"invalid_json", "string_val", "valid_double"},
+		},
+		Rows: [][]interface{}{
+			{
+				json.Number("invalid_number_format"), // malformed number
+				"test_string",                        // regular string
+				json.Number("123.456"),               // valid double
+			},
+		},
+	}
+
+	// Test malformed json.Number - should return 0 for numeric conversions
+	assert.Equal(t, int32(0), resultTable.GetInt(0, 0))
+	assert.Equal(t, int64(0), resultTable.GetLong(0, 0))
+	assert.Equal(t, float32(0), resultTable.GetFloat(0, 0))
+	assert.Equal(t, float64(0), resultTable.GetDouble(0, 0))
+
+	// Test regular string
+	assert.Equal(t, "test_string", resultTable.GetString(0, 1))
+
+	// Test valid double
+	assert.Equal(t, float64(123.456), resultTable.GetDouble(0, 2))
+}
+
+func TestResultTableUtilityMethods(t *testing.T) {
+	resultTable := ResultTable{
+		DataSchema: RespSchema{
+			ColumnDataTypes: []string{"INT", "STRING", "DOUBLE"},
+			ColumnNames:     []string{"col1", "col2", "col3"},
+		},
+		Rows: [][]interface{}{
+			{json.Number("1"), "value1", json.Number("1.1")},
+			{json.Number("2"), "value2", json.Number("2.2")},
+		},
+	}
+
+	// Test utility methods for better coverage
+	assert.Equal(t, 2, resultTable.GetRowCount())
+	assert.Equal(t, 3, resultTable.GetColumnCount())
+	assert.Equal(t, "col1", resultTable.GetColumnName(0))
+	assert.Equal(t, "col2", resultTable.GetColumnName(1))
+	assert.Equal(t, "col3", resultTable.GetColumnName(2))
+	assert.Equal(t, "INT", resultTable.GetColumnDataType(0))
+	assert.Equal(t, "STRING", resultTable.GetColumnDataType(1))
+	assert.Equal(t, "DOUBLE", resultTable.GetColumnDataType(2))
+
+	// Test Get method
+	assert.Equal(t, json.Number("1"), resultTable.Get(0, 0))
+	assert.Equal(t, "value1", resultTable.Get(0, 1))
+	assert.Equal(t, json.Number("1.1"), resultTable.Get(0, 2))
+}
+
+func TestResultTableBoundaryValues(t *testing.T) {
+	// Test with boundary values for different numeric types
+	resultTable := ResultTable{
+		DataSchema: RespSchema{
+			ColumnDataTypes: []string{"INT", "LONG", "FLOAT", "DOUBLE"},
+			ColumnNames:     []string{"int_max", "long_max", "float_max", "double_max"},
+		},
+		Rows: [][]interface{}{
+			{
+				json.Number("2147483647"),              // int32 max
+				json.Number("9223372036854775807"),     // int64 max
+				json.Number("3.4028234e+38"),           // float32 near max (safe value)
+				json.Number("1.7976931348623157e+308"), // float64 max
+			},
+			{
+				json.Number("-2147483648"),              // int32 min
+				json.Number("-9223372036854775808"),     // int64 min
+				json.Number("-3.4028234e+38"),           // float32 near min (safe value)
+				json.Number("-1.7976931348623157e+308"), // float64 min
+			},
+		},
+	}
+
+	// Test maximum values
+	assert.Equal(t, int32(2147483647), resultTable.GetInt(0, 0))
+	assert.Equal(t, int64(9223372036854775807), resultTable.GetLong(0, 1))
+	// Note: float32 max value should be converted successfully
+	result := resultTable.GetFloat(0, 2)
+	assert.True(t, result != 0, "float32 max value should not be converted to 0")
+	assert.Equal(t, float64(1.7976931348623157e+308), resultTable.GetDouble(0, 3))
+
+	// Test minimum values
+	assert.Equal(t, int32(-2147483648), resultTable.GetInt(1, 0))
+	assert.Equal(t, int64(-9223372036854775808), resultTable.GetLong(1, 1))
+	// Note: float32 min value should be converted successfully
+	result2 := resultTable.GetFloat(1, 2)
+	assert.True(t, result2 != 0, "float32 min value should not be converted to 0")
+	assert.Equal(t, float64(-1.7976931348623157e+308), resultTable.GetDouble(1, 3))
+}

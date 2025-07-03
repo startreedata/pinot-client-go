@@ -188,6 +188,228 @@ if err != nil {
 pinotClient.UseMultistageEngine(true)
 ```
 
+## Using PreparedStatement
+
+PreparedStatement provides a convenient and efficient way to execute parameterized queries. It's similar to Java's PreparedStatement, offering type safety, parameter validation, and reusability.
+
+Please see this [example](https://github.com/startreedata/pinot-client-go/blob/master/examples/prepared-statement-example/main.go) for your reference.
+
+How to run it:
+
+```sh
+go build ./examples/prepared-statement-example
+./prepared-statement-example
+```
+
+### Basic PreparedStatement Usage
+
+```go
+// Create a connection
+pinotClient, err := pinot.NewFromZookeeper([]string{"localhost:2123"}, "", "QuickStartCluster")
+if err != nil {
+    log.Error(err)
+}
+
+// Create a prepared statement
+stmt, err := pinotClient.Prepare("baseballStats", "SELECT playerName, homeRuns FROM baseballStats WHERE teamID = ? AND yearID = ? ORDER BY homeRuns DESC LIMIT ?")
+if err != nil {
+    log.Error(err)
+}
+defer stmt.Close() // Always close the statement when done
+
+// Set parameters (1-based indexing like Java PreparedStatement)
+err = stmt.SetString(1, "SFN")  // teamID
+if err != nil {
+    log.Error(err)
+}
+err = stmt.SetInt(2, 2000)      // yearID
+if err != nil {
+    log.Error(err)
+}
+err = stmt.SetInt(3, 10)        // LIMIT
+if err != nil {
+    log.Error(err)
+}
+
+// Execute the query
+response, err := stmt.Execute()
+if err != nil {
+    log.Error(err)
+}
+
+// Process results
+for i := 0; i < response.ResultTable.GetRowCount(); i++ {
+    playerName := response.ResultTable.GetString(i, 0)
+    homeRuns := response.ResultTable.GetLong(i, 1)
+    log.Printf("Player: %s, Home Runs: %d", playerName, homeRuns)
+}
+```
+
+### PreparedStatement with ExecuteWithParams
+
+For one-time execution, you can use the `ExecuteWithParams` convenience method:
+
+```go
+stmt, err := pinotClient.Prepare("baseballStats", "SELECT COUNT(*) as cnt FROM baseballStats WHERE teamID = ? AND yearID >= ?")
+if err != nil {
+    log.Error(err)
+}
+defer stmt.Close()
+
+// Execute with parameters in one call
+response, err := stmt.ExecuteWithParams("NYA", 2000)
+if err != nil {
+    log.Error(err)
+}
+
+count := response.ResultTable.GetLong(0, 0)
+log.Printf("Count: %d", count)
+```
+
+### Reusing PreparedStatement
+
+PreparedStatements can be reused with different parameters for better performance:
+
+```go
+stmt, err := pinotClient.Prepare("baseballStats", "SELECT COUNT(*) as playerCount FROM baseballStats WHERE teamID = ?")
+if err != nil {
+    log.Error(err)
+}
+defer stmt.Close()
+
+teams := []string{"NYA", "BOS", "LAA", "SFN"}
+for _, team := range teams {
+    // Clear previous parameters
+    err = stmt.ClearParameters()
+    if err != nil {
+        log.Error(err)
+    }
+    
+    // Set new parameter
+    err = stmt.SetString(1, team)
+    if err != nil {
+        log.Error(err)
+    }
+    
+    // Execute
+    response, err := stmt.Execute()
+    if err != nil {
+        log.Error(err)
+    }
+    
+    count := response.ResultTable.GetLong(0, 0)
+    log.Printf("Team %s: %d players", team, count)
+}
+```
+
+### Supported Parameter Types
+
+PreparedStatement supports various parameter types with dedicated setter methods:
+
+```go
+stmt, err := pinotClient.Prepare("baseballStats", 
+    "SELECT * FROM baseballStats WHERE yearID = ? AND homeRuns >= ? AND battingAvg > ? AND active = ?")
+if err != nil {
+    log.Error(err)
+}
+defer stmt.Close()
+
+// Type-specific setters
+err = stmt.SetInt(1, 2001)           // int
+err = stmt.SetInt64(2, 25)           // int64  
+err = stmt.SetFloat64(3, 0.300)      // float64
+err = stmt.SetBool(4, true)          // bool
+err = stmt.SetString(5, "player")    // string
+
+// Generic setter for any supported type
+err = stmt.Set(1, 2001)              // Automatically detects type
+err = stmt.Set(2, int64(25))         // Explicit type conversion
+err = stmt.Set(3, 0.300)             // float64
+err = stmt.Set(4, true)              // bool
+
+// Execute
+response, err := stmt.Execute()
+```
+
+### PreparedStatement with Complex Queries
+
+PreparedStatement works well with complex queries including aggregations, joins, and subqueries:
+
+```go
+// Complex aggregation query
+stmt, err := pinotClient.Prepare("baseballStats", `
+    SELECT teamID, 
+           COUNT(*) as playerCount,
+           SUM(homeRuns) as totalHomeRuns,
+           AVG(battingAvg) as avgBattingAvg
+    FROM baseballStats 
+    WHERE yearID BETWEEN ? AND ? 
+      AND homeRuns >= ? 
+    GROUP BY teamID 
+    HAVING COUNT(*) > ?
+    ORDER BY totalHomeRuns DESC 
+    LIMIT ?`)
+if err != nil {
+    log.Error(err)
+}
+defer stmt.Close()
+
+// Execute with multiple parameters
+response, err := stmt.ExecuteWithParams(2000, 2010, 10, 5, 10)
+if err != nil {
+    log.Error(err)
+}
+
+// Process aggregated results
+for i := 0; i < response.ResultTable.GetRowCount(); i++ {
+    teamID := response.ResultTable.GetString(i, 0)
+    playerCount := response.ResultTable.GetLong(i, 1)
+    totalHomeRuns := response.ResultTable.GetLong(i, 2)
+    avgBattingAvg := response.ResultTable.GetDouble(i, 3)
+    
+    log.Printf("Team: %s, Players: %d, Total HRs: %d, Avg BA: %.3f", 
+        teamID, playerCount, totalHomeRuns, avgBattingAvg)
+}
+```
+
+### PreparedStatement Methods
+
+PreparedStatement provides the following methods:
+
+```go
+type PreparedStatement interface {
+    // Parameter setting methods
+    SetString(parameterIndex int, value string) error
+    SetInt(parameterIndex int, value int) error
+    SetInt64(parameterIndex int, value int64) error
+    SetFloat64(parameterIndex int, value float64) error
+    SetBool(parameterIndex int, value bool) error
+    Set(parameterIndex int, value interface{}) error
+    
+    // Execution methods
+    Execute() (*BrokerResponse, error)
+    ExecuteWithParams(params ...interface{}) (*BrokerResponse, error)
+    
+    // Utility methods
+    GetQuery() string
+    GetParameterCount() int
+    ClearParameters() error
+    Close() error
+}
+```
+
+### Best Practices
+
+1. **Always close PreparedStatements**: Use `defer stmt.Close()` to ensure proper resource cleanup
+2. **Reuse PreparedStatements**: For repeated queries with different parameters, reuse the same PreparedStatement
+3. **Use type-specific setters**: Use `SetString()`, `SetInt()`, etc. for better type safety
+4. **Handle errors properly**: Always check for errors when setting parameters and executing queries
+5. **Clear parameters when reusing**: Use `ClearParameters()` when reusing statements with different parameter sets
+
+### Thread Safety
+
+PreparedStatement is thread-safe and can be used concurrently from multiple goroutines. However, parameter setting and execution should be coordinated to avoid race conditions in your application logic.
+
 ## Response Format
 
 Query Response is defined as the struct of following:
