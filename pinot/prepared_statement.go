@@ -162,24 +162,30 @@ func (ps *preparedStatement) Execute() (*BrokerResponse, error) {
 // This is a convenience method that sets all parameters and executes in one call
 func (ps *preparedStatement) ExecuteWithParams(params ...interface{}) (*BrokerResponse, error) {
 	ps.mutex.Lock()
-	defer ps.mutex.Unlock()
 
 	if ps.closed {
+		ps.mutex.Unlock()
 		return nil, fmt.Errorf("prepared statement is closed")
 	}
 
 	if len(params) != ps.paramCount {
+		ps.mutex.Unlock()
 		return nil, fmt.Errorf("expected %d parameters, got %d", ps.paramCount, len(params))
 	}
 
 	// Build the final query
 	query, err := ps.buildQuery(params)
 	if err != nil {
+		ps.mutex.Unlock()
 		return nil, fmt.Errorf("failed to build query: %v", err)
 	}
 
-	// Execute the query using the connection
-	return ps.connection.ExecuteSQL(ps.table, query)
+	// Get table name before releasing lock
+	table := ps.table
+	ps.mutex.Unlock()
+
+	// Execute the query using the connection (without holding the lock)
+	return ps.connection.ExecuteSQL(table, query)
 }
 
 // GetQuery returns the original query template

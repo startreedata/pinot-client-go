@@ -1,9 +1,11 @@
 package pinot
 
 import (
-	"math"
-
 	"encoding/json"
+	"errors"
+	"fmt"
+	"math"
+	"strconv"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -98,8 +100,29 @@ func (r ResultTable) GetString(rowIndex int, columnIndex int) string {
 	if col, ok := (r.Rows[rowIndex][columnIndex]).(string); ok {
 		return col
 	}
-	log.Errorf("Error converting to string: %v", r.Rows[rowIndex][columnIndex])
-	return ""
+	if col, ok := (r.Rows[rowIndex][columnIndex]).(json.Number); ok {
+		return string(col)
+	}
+	// Handle other common types by converting to string
+	value := r.Rows[rowIndex][columnIndex]
+	log.Debugf("Converting unexpected type %T to string at row %d, column %d: %v", value, rowIndex, columnIndex, value)
+	return fmt.Sprintf("%v", value)
+}
+
+// isWithinInt32Range checks if a float64 value is within int32 range
+func isWithinInt32Range(val float64) bool {
+	return val <= float64(math.MaxInt32) && val >= float64(math.MinInt32)
+}
+
+// isWithinInt64Range checks if a float64 value is within int64 range
+func isWithinInt64Range(val float64) bool {
+	return val <= float64(math.MaxInt64) && val >= float64(math.MinInt64)
+}
+
+// isRangeError checks if an error is a strconv range error
+func isRangeError(err error) bool {
+	var rangeErr *strconv.NumError
+	return errors.As(err, &rangeErr) && rangeErr.Err == strconv.ErrRange
 }
 
 // GetInt returns a ResultTable int entry given row index and column index
@@ -107,16 +130,33 @@ func (r ResultTable) GetInt(rowIndex int, columnIndex int) int32 {
 	if col, ok := (r.Rows[rowIndex][columnIndex]).(json.Number); ok {
 		val, err := col.Int64()
 		if err != nil {
-			log.Errorf("Error converting to long: %v", err)
+			// If Int64() failed, try parsing as float64 and converting to int32
+			// This handles cases where numbers come back as "42.0" instead of "42"
+			floatVal, floatErr := col.Float64()
+			if floatErr != nil {
+				log.Errorf("Error converting to float64: %v", floatErr)
+				return 0
+			}
+			// Check if the float value is within int32 range
+			if !isWithinInt32Range(floatVal) {
+				log.Errorf("Error converting to int: value out of range: %f", floatVal)
+				return 0
+			}
+			// Convert float to int32, checking for whole numbers
+			if floatVal == float64(int32(floatVal)) {
+				return int32(floatVal)
+			}
+			log.Errorf("Error converting to int: %v (value is not a whole number: %f)", err, floatVal)
 			return 0
 		}
-		if val < int64(math.MinInt32) || val > int64(math.MaxInt32) {
-			log.Errorf("Error converting to int: %v", val)
+		// Check if the value is within int32 range
+		if val > int64(math.MaxInt32) || val < int64(math.MinInt32) {
+			log.Errorf("Error converting to int: value out of range: %d", val)
 			return 0
 		}
 		return int32(val)
 	}
-	log.Errorf("Error converting to json.Number: %v", r.Rows[rowIndex][columnIndex])
+	log.Errorf("Error converting to json.Number at row %d, column %d: %v (type: %T)", rowIndex, columnIndex, r.Rows[rowIndex][columnIndex], r.Rows[rowIndex][columnIndex])
 	return 0
 }
 
@@ -125,12 +165,37 @@ func (r ResultTable) GetLong(rowIndex int, columnIndex int) int64 {
 	if col, ok := (r.Rows[rowIndex][columnIndex]).(json.Number); ok {
 		val, err := col.Int64()
 		if err != nil {
-			log.Errorf("Error converting to long: %v", err)
+			// If Int64() failed, it could be either:
+			// 1. A decimal number like "14859.0" that should be converted
+			// 2. An out-of-range number that should return 0
+			// We can differentiate by checking if the original Int64() error indicates overflow
+			if isRangeError(err) {
+				log.Errorf("Error converting to long: %v", err)
+				return 0
+			}
+
+			// If Int64() failed for other reasons, try parsing as float64 and converting to int64
+			// This handles cases where numbers come back as "14859.0" instead of "14859"
+			floatVal, floatErr := col.Float64()
+			if floatErr != nil {
+				log.Errorf("Error converting to float64: %v", floatErr)
+				return 0
+			}
+			// Check if the float value is within int64 range
+			if !isWithinInt64Range(floatVal) {
+				log.Errorf("Error converting to long: value out of range: %f", floatVal)
+				return 0
+			}
+			// Convert float to int64, checking for whole numbers
+			if floatVal == float64(int64(floatVal)) {
+				return int64(floatVal)
+			}
+			log.Errorf("Error converting to long: %v (value is not a whole number: %f)", err, floatVal)
 			return 0
 		}
 		return val
 	}
-	log.Errorf("Error converting to json.Number: %v", r.Rows[rowIndex][columnIndex])
+	log.Errorf("Error converting to json.Number at row %d, column %d: %v (type: %T)", rowIndex, columnIndex, r.Rows[rowIndex][columnIndex], r.Rows[rowIndex][columnIndex])
 	return 0
 }
 
@@ -142,9 +207,19 @@ func (r ResultTable) GetFloat(rowIndex int, columnIndex int) float32 {
 			log.Errorf("Error converting to float: %v", err)
 			return 0
 		}
+		// Check if the value is infinity (out of range for float32)
+		if math.IsInf(val, 0) {
+			log.Errorf("Error converting to float: value out of range (infinity): %f", val)
+			return 0
+		}
+		// Check if the value is too large to fit in float32 (but not infinity)
+		if val > float64(math.MaxFloat32) || val < -float64(math.MaxFloat32) {
+			log.Errorf("Error converting to float: value out of range: %f", val)
+			return 0
+		}
 		return float32(val)
 	}
-	log.Errorf("Error converting to json.Number: %v", r.Rows[rowIndex][columnIndex])
+	log.Errorf("Error converting to json.Number at row %d, column %d: %v (type: %T)", rowIndex, columnIndex, r.Rows[rowIndex][columnIndex], r.Rows[rowIndex][columnIndex])
 	return 0
 }
 
@@ -156,8 +231,13 @@ func (r ResultTable) GetDouble(rowIndex int, columnIndex int) float64 {
 			log.Errorf("Error converting to double: %v", err)
 			return 0
 		}
+		// Check if the value is infinity (out of range for float64)
+		if math.IsInf(val, 0) {
+			log.Errorf("Error converting to double: value out of range (infinity): %f", val)
+			return 0
+		}
 		return val
 	}
-	log.Errorf("Error converting to json.Number: %v", r.Rows[rowIndex][columnIndex])
+	log.Errorf("Error converting to json.Number at row %d, column %d: %v (type: %T)", rowIndex, columnIndex, r.Rows[rowIndex][columnIndex], r.Rows[rowIndex][columnIndex])
 	return 0
 }

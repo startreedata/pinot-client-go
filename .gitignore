@@ -5,6 +5,8 @@
 *.so
 *.dylib
 batch-quickstart
+logs/
+examples/batch/
 
 # Test binary, built with `go test -c`
 *.test
