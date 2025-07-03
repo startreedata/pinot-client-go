@@ -7,6 +7,11 @@ on:
         description: 'Release tag (e.g., v1.0.0)'
         required: true
         type: string
+      ref:
+        description: 'Branch or commit to tag (default: master)'
+        required: false
+        default: 'master'
+        type: string
 
 jobs:
   create-release:
@@ -17,6 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.inputs.ref }}
           fetch-depth: 0
 
       - name: Validate tag format
@@ -41,6 +47,16 @@ jobs:
             exit 1
           fi
           echo "✅ Tag $TAG is available"
+
+      - name: Verify ref and show commit info
+        run: |
+          REF="${{ github.event.inputs.ref }}"
+          COMMIT_SHA=$(git rev-parse HEAD)
+          COMMIT_MSG=$(git log -1 --pretty=format:"%s")
+          echo "📍 Tagging ref: $REF"
+          echo "📝 Commit SHA: $COMMIT_SHA"
+          echo "💬 Commit message: $COMMIT_MSG"
+          echo "📅 Commit date: $(git log -1 --pretty=format:"%ci")"
 
       - name: Configure git
         run: |
