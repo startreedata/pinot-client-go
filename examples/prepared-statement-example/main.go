@@ -213,7 +213,7 @@ func errorHandlingExample(client *pinot.Connection) {
 func printQueryResults(title string, response *pinot.BrokerResponse) {
 	fmt.Printf("--- %s ---\n", title)
 
-	if response.Exceptions != nil && len(response.Exceptions) > 0 {
+	if len(response.Exceptions) > 0 {
 		fmt.Printf("Query returned exceptions: %v\n", response.Exceptions)
 		return
 	}
