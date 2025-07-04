@@ -146,9 +146,34 @@ jobs:
           git push origin "$MAJOR_TAG" --force
           echo "✅ Major version tag updated"
 
+      - name: Notify pkg.go.dev of new release
+        run: |
+          TAG="${{ github.event.inputs.tag }}"
+          echo "🔔 Notifying pkg.go.dev of new release: $TAG"
+
+          # Request the new version from Go module proxy to trigger indexing
+          MODULE_PATH="github.com/startreedata/pinot-client-go"
+          PROXY_URL="https://proxy.golang.org/$MODULE_PATH/@v/$TAG.info"
+
+          # Try to fetch the version info (this triggers the proxy to fetch from GitHub)
+          if curl -f -s "$PROXY_URL" > /dev/null 2>&1; then
+            echo "✅ Successfully triggered pkg.go.dev indexing for $TAG"
+          else
+            echo "⚠️  Initial request failed, waiting 30 seconds and retrying..."
+            sleep 30
+            if curl -f -s "$PROXY_URL" > /dev/null 2>&1; then
+              echo "✅ Successfully triggered pkg.go.dev indexing for $TAG on retry"
+            else
+              echo "⚠️  Could not immediately trigger pkg.go.dev indexing"
+              echo "💡 The new version should appear on pkg.go.dev within a few minutes"
+              echo "🔗 You can manually request it at: https://pkg.go.dev/$MODULE_PATH@$TAG"
+            fi
+          fi
+
       - name: Success notification
         run: |
           TAG="${{ github.event.inputs.tag }}"
           echo "🎉 Release $TAG has been successfully created!"
           echo "📦 Go developers can now install with: go get github.com/startreedata/pinot-client-go@$TAG"
-          echo "📋 Release page: https://github.com/startreedata/pinot-client-go/releases/tag/$TAG" 
+          echo "📋 Release page: https://github.com/startreedata/pinot-client-go/releases/tag/$TAG"
+          echo "🔗 Go package page: https://pkg.go.dev/github.com/startreedata/pinot-client-go@$TAG"
