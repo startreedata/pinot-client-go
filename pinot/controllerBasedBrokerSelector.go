@@ -61,7 +61,7 @@ func (s *controllerBasedSelector) setupInterval() {
 
 		err := s.updateBrokerData()
 		if err != nil {
-			log.Errorf("Caught exception when updating broker data, Error: %v", err)
+			log.Errorf("caught exception when updating broker data, Error: %v", err)
 		}
 
 		lastInvocation = time.Now()
@@ -75,7 +75,7 @@ func getControllerRequestURL(controllerAddress string) (string, error) {
 		scheme := tokenized[0]
 		if scheme != "https" && scheme != "http" {
 			return "", fmt.Errorf(
-				"Unsupported controller URL scheme: %s, only http (default) and https are allowed",
+				"unsupported controller URL scheme: %s, only http (default) and https are allowed",
 				scheme,
 			)
 		}
@@ -88,7 +88,7 @@ func getControllerRequestURL(controllerAddress string) (string, error) {
 func (s *controllerBasedSelector) createControllerRequest() (*http.Request, error) {
 	r, err := http.NewRequest("GET", s.controllerAPIReqURL, nil)
 	if err != nil {
-		return r, fmt.Errorf("Caught exception when creating controller API request: %v", err)
+		return r, fmt.Errorf("caught exception when creating controller API request: %v", err)
 	}
 	for k, v := range controllerDefaultHTTPHeader {
 		r.Header.Add(k, v)
@@ -106,7 +106,7 @@ func (s *controllerBasedSelector) updateBrokerData() error {
 	}
 	resp, err := s.client.Do(r)
 	if err != nil {
-		return fmt.Errorf("Got exceptions while sending controller API request: %v", err)
+		return fmt.Errorf("got exception while sending controller API request: %v", err)
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
@@ -116,11 +116,11 @@ func (s *controllerBasedSelector) updateBrokerData() error {
 	if resp.StatusCode == http.StatusOK {
 		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return fmt.Errorf("An error occurred when reading controller API response: %v", err)
+			return fmt.Errorf("an error occurred when reading controller API response: %v", err)
 		}
 		var c controllerResponse
 		if err = decodeJSONWithNumber(bodyBytes, &c); err != nil {
-			return fmt.Errorf("An error occurred when decoding controller API response: %v", err)
+			return fmt.Errorf("an error occurred when decoding controller API response: %v", err)
 		}
 		s.rwMux.Lock()
 		s.allBrokerList = c.extractBrokerList()
@@ -128,5 +128,5 @@ func (s *controllerBasedSelector) updateBrokerData() error {
 		s.rwMux.Unlock()
 		return nil
 	}
-	return fmt.Errorf("Controller API returned HTTP status code %v", resp.StatusCode)
+	return fmt.Errorf("controller API returned HTTP status code %v", resp.StatusCode)
 }

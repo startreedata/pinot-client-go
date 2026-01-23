@@ -76,7 +76,7 @@ func (s *dynamicBrokerSelector) setupWatcher() {
 
 func (s *dynamicBrokerSelector) refreshExternalView() error {
 	if s.readZNode == nil {
-		return fmt.Errorf("No method defined to read from a ZNode")
+		return fmt.Errorf("no method defined to read from a ZNode")
 	}
 	node, err := s.readZNode(s.externalViewZkPath)
 	if err != nil {
