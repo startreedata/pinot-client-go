@@ -25,7 +25,7 @@ jobs:
           cache: false
 
       - name: Linter
-        uses: golangci/golangci-lint-action@v4
+        uses: golangci/golangci-lint-action@v9
 
   unit-tests:
     runs-on: ubuntu-latest
