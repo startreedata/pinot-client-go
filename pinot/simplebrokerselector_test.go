@@ -33,10 +33,10 @@ func TestWithEmptyBrokerList(t *testing.T) {
 		brokerList: []string{},
 	}
 	err := s.init()
-	assert.EqualError(t, err, "No pre-configured broker lists set in simpleBrokerSelector")
+	assert.EqualError(t, err, "no pre-configured broker lists set in simpleBrokerSelector")
 	for i := 0; i < 10; i++ {
 		brokerName, err := s.selectBroker("t")
 		assert.Equal(t, "", brokerName)
-		assert.EqualError(t, err, "No pre-configured broker lists set in simpleBrokerSelector")
+		assert.EqualError(t, err, "no pre-configured broker lists set in simpleBrokerSelector")
 	}
 }

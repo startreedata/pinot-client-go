@@ -72,7 +72,7 @@ func TestControllerBasedBrokerSelectorInitError(t *testing.T) {
 	}
 	err = s.init()
 	assert.NotNil(t, err)
-	assert.True(t, strings.Contains(err.Error(), "Unsupported controller URL scheme"))
+	assert.True(t, strings.Contains(err.Error(), "unsupported controller URL scheme"))
 }
 
 func TestGetControllerRequestUrl(t *testing.T) {
@@ -91,7 +91,7 @@ func TestGetControllerRequestUrl(t *testing.T) {
 	u, err = getControllerRequestURL("smb://nope:1234")
 	assert.NotNil(t, err)
 	assert.Equal(t, "", u)
-	assert.True(t, strings.Contains(err.Error(), "Unsupported controller URL scheme: smb"))
+	assert.True(t, strings.Contains(err.Error(), "unsupported controller URL scheme: smb"))
 }
 
 func TestCreateControllerRequest(t *testing.T) {
