@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	pinot "github.com/startreedata/pinot-client-go/pinot"
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/startreedata/pinot-client-go/pinot"
 )
 
 // getEnv retrieves the value of the environment variable named by the key.
@@ -149,6 +149,10 @@ func TestSendingQueriesToPinot(t *testing.T) {
 		getPinotClientFromBrokerAndCustomHTTPClient(true),
 		getPinotClientFromConfigAndCustomHTTPClient(true),
 	}
+	clientCount := len(pinotClients)
+	if clientCount == 0 {
+		t.Fatal("no Pinot clients configured")
+	}
 
 	table := "baseballStats"
 	pinotQueries := []string{
@@ -159,7 +163,7 @@ func TestSendingQueriesToPinot(t *testing.T) {
 	for _, query := range pinotQueries {
 		for i := 0; i < 200; i++ {
 			log.Printf("Trying to query Pinot: %v\n", query)
-			brokerResp, err := pinotClients[i%len(pinotClients)].ExecuteSQL(table, query)
+			brokerResp, err := pinotClients[i%clientCount].ExecuteSQL(table, query) // #nosec G602 -- clientCount is checked above
 			assert.Nil(t, err)
 			assert.Equal(t, int64(97889), brokerResp.ResultTable.GetLong(0, 0))
 		}

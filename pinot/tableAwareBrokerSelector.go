@@ -26,7 +26,7 @@ func (s *tableAwareBrokerSelector) selectBroker(table string) (string, error) {
 		brokerList = s.allBrokerList
 		s.rwMux.RUnlock()
 		if len(brokerList) == 0 {
-			return "", fmt.Errorf("No available broker found")
+			return "", fmt.Errorf("no available broker found")
 		}
 	} else {
 		var found bool
@@ -34,10 +34,10 @@ func (s *tableAwareBrokerSelector) selectBroker(table string) (string, error) {
 		brokerList, found = s.tableBrokerMap[tableName]
 		s.rwMux.RUnlock()
 		if !found {
-			return "", fmt.Errorf("Unable to find the table: %s", table)
+			return "", fmt.Errorf("unable to find the table: %s", table)
 		}
 		if len(brokerList) == 0 {
-			return "", fmt.Errorf("No available broker found for table: %s", table)
+			return "", fmt.Errorf("no available broker found for table: %s", table)
 		}
 	}
 	// #nosec G404

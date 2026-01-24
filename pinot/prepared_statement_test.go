@@ -315,8 +315,8 @@ func TestPreparedStatement_ConcurrentUsage(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		go func(id int) {
 			defer func() { done <- true }()
-			err := stmt.SetInt(1, id)
-			assert.NoError(t, err)
+			setErr := stmt.SetInt(1, id)
+			assert.NoError(t, setErr)
 		}(i)
 	}
 

@@ -1,74 +1,72 @@
+version: "2"
+
 run:
   # Allow multiple parallel golangci-lint instances running.
   # If false (default) - golangci-lint acquires file lock on start.
   allow-parallel-runners: true
 
-output:
-  # sorts results by: filepath, line and column
-  sort-results: true
-
 linters:
   enable:
     - errcheck
-    - gofmt
-    - goimports
     - gosec
     - govet
     - ineffassign
     - staticcheck
-    - typecheck
     - revive
     - unused
   disable:
     - gochecknoinits
     - gochecknoglobals
 
-linters-settings:
-  shadow:
-    enable: true
-    # report about shadowed variables
-    check-shadowing: true
+  settings:
+    govet:
+      enable:
+        - shadow
+    gocritic:
+      enabled-checks:
+        - appendCombine
+        - argOrder
+        - badCond
+        - dupBranchBody
+        - dupCase
+        - dupSubExpr
+        - elseif
+        - hugeParam
+        - initClause
+        - rangeValCopy
+        - sloppyLen
+        - typeSwitchVar
+        - underef
+        - unlambda
+        - unslice
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
 
-    # enable or disable analyzers by name
-    # run `go tool vet help` to see all analyzers
-    enable-all: true
-  golint:
-    min-confidence: 0.8
-  gocritic:
-    enabled-checks:
-      - appendCombine
-      - argOrder
-      - badCond
-      - dupBranchBody
-      - dupCase
-      - dupSubExpr
-      - elseif
-      - hugeParam
-      - initClause
-      - rangeValCopy
-      - sloppyLen
-      - typeSwitchVar
-      - underef
-      - unlambda
-      - unslice
-  gofmt:
-    simplify: true
-  goimports:
-    local-prefixes: github.com/myorg/mypackage
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
+  exclusions:
+    # Match v1 behavior: do not apply the default exclusions.
+    presets: []
+    paths:
+      - ^examples/
+    rules:
+      - linters:
+          - govet
+        text: "composite literal uses unkeyed fields"
+      - linters:
+          - staticcheck
+        text: "SA5001: should check returned error before deferring"
 
-issues:
-  exclude-use-default: false
-  exclude-rules:
-    - linters:
-        - govet
-      text: "composite literal uses unkeyed fields"
-    - linters:
-        - golint
-      text: "should have comment or be unexported"
-    - linters:
-        - staticcheck
-      text: "SA5001: should check returned error before deferring"
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    paths:
+      - ^examples/
+  settings:
+    gofmt:
+      simplify: true
+    goimports:
+      local-prefixes:
+        - github.com/startreedata/pinot-client-go
 
