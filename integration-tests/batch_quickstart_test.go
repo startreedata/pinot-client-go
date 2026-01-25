@@ -10,6 +10,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/startreedata/pinot-client-go/pinot"
 )
@@ -24,28 +25,8 @@ func getEnv(key, defaultValue string) string {
 }
 
 var (
-	zookeeperPort  = getEnv("ZOOKEEPER_PORT", "2123")
-	controllerPort = getEnv("CONTROLLER_PORT", "9000")
-	brokerPort     = getEnv("BROKER_PORT", "8000")
+	brokerPort = getEnv("BROKER_PORT", "8000")
 )
-
-func getPinotClientFromZookeeper(useMultistageEngine bool) *pinot.Connection {
-	pinotClient, err := pinot.NewFromZookeeper([]string{"localhost:" + zookeeperPort}, "", "QuickStartCluster")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	pinotClient.UseMultistageEngine(useMultistageEngine)
-	return pinotClient
-}
-
-func getPinotClientFromController(useMultistageEngine bool) *pinot.Connection {
-	pinotClient, err := pinot.NewFromController("localhost:" + controllerPort)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	pinotClient.UseMultistageEngine(useMultistageEngine)
-	return pinotClient
-}
 
 func getPinotClientFromBroker(useMultistageEngine bool) *pinot.Connection {
 	pinotClient, err := pinot.NewFromBrokerList([]string{"localhost:" + brokerPort})
@@ -71,24 +52,6 @@ func getCustomHTTPClient() *http.Client {
 		},
 	}
 	return httpClient
-}
-
-func getPinotClientFromZookeeperAndCustomHTTPClient(useMultistageEngine bool) *pinot.Connection {
-	pinotClient, err := pinot.NewFromZookeeperAndClient([]string{"localhost:" + zookeeperPort}, "", "QuickStartCluster", getCustomHTTPClient())
-	if err != nil {
-		log.Fatalln(err)
-	}
-	pinotClient.UseMultistageEngine(useMultistageEngine)
-	return pinotClient
-}
-
-func getPinotClientFromControllerAndCustomHTTPClient(useMultistageEngine bool) *pinot.Connection {
-	pinotClient, err := pinot.NewFromControllerAndClient("localhost:"+controllerPort, getCustomHTTPClient())
-	if err != nil {
-		log.Fatalln(err)
-	}
-	pinotClient.UseMultistageEngine(useMultistageEngine)
-	return pinotClient
 }
 
 func getPinotClientFromBrokerAndCustomHTTPClient(useMultistageEngine bool) *pinot.Connection {
@@ -156,10 +119,7 @@ func TestSendingQueriesToPinot(t *testing.T) {
 		for i := 0; i < 200; i++ {
 			log.Printf("Trying to query Pinot: %v\n", query)
 			brokerResp, err := pinotClients[i%clientCount].ExecuteSQL(table, query) // #nosec G602 -- clientCount is checked above
-			assert.NoError(t, err)
-			if err != nil {
-				continue
-			}
+			require.NoError(t, err)
 			assert.Equal(t, int64(97889), brokerResp.ResultTable.GetLong(0, 0))
 		}
 	}
@@ -395,10 +355,7 @@ func TestPreparedStatementIntegrationWithMultistage(t *testing.T) {
 			defer func() { _ = stmt.Close() }() //nolint:errcheck
 
 			response, err := stmt.ExecuteWithParams(2000, 10)
-			assert.NoError(t, err)
-			if err != nil {
-				return
-			}
+			require.NoError(t, err)
 			assert.NotNil(t, response)
 			assert.NotNil(t, response.ResultTable)
 			assert.True(t, response.ResultTable.GetRowCount() <= 10)

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"strings"
 
 	"github.com/startreedata/pinot-client-go/pinot"
@@ -89,6 +90,9 @@ func convertValue(value interface{}, columnType string) (driver.Value, error) {
 	case int64:
 		return v, nil
 	case uint:
+		if v > math.MaxInt64 {
+			return nil, fmt.Errorf("uint value %d overflows int64", v)
+		}
 		return int64(v), nil
 	case uint8:
 		return int64(v), nil
@@ -97,6 +101,9 @@ func convertValue(value interface{}, columnType string) (driver.Value, error) {
 	case uint32:
 		return int64(v), nil
 	case uint64:
+		if v > math.MaxInt64 {
+			return nil, fmt.Errorf("uint64 value %d overflows int64", v)
+		}
 		return int64(v), nil
 	case bool:
 		return v, nil

@@ -3,10 +3,11 @@ package main
 import (
 	"testing"
 
-	"github.com/startreedata/pinot-client-go/gormpinot"
-	"github.com/startreedata/pinot-client-go/pinot"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
+
+	"github.com/startreedata/pinot-client-go/gormpinot"
+	"github.com/startreedata/pinot-client-go/pinot"
 )
 
 type gormPlayer struct {

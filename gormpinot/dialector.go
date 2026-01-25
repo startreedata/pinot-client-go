@@ -4,12 +4,13 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/startreedata/pinot-client-go/pinot"
 	"gorm.io/gorm"
 	"gorm.io/gorm/callbacks"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
+
+	"github.com/startreedata/pinot-client-go/pinot"
 )
 
 // Config configures the Pinot GORM dialector.
@@ -38,7 +39,7 @@ func (d Dialector) Initialize(db *gorm.DB) error {
 	if d.config.Conn == nil {
 		return errors.New("pinot connection is required")
 	}
-	db.Config.DisableAutomaticPing = true
+	db.DisableAutomaticPing = true
 
 	connector := newConnector(d.config.Conn, d.config.DefaultTable)
 	db.ConnPool = sql.OpenDB(connector)
@@ -69,7 +70,7 @@ func (Dialector) DefaultValueOf(*schema.Field) clause.Expression {
 
 // BindVarTo writes a placeholder.
 func (Dialector) BindVarTo(writer clause.Writer, _ *gorm.Statement, _ interface{}) {
-	writer.WriteByte('?')
+	writeByte(writer, '?')
 }
 
 // QuoteTo quotes identifiers with double quotes.
@@ -85,7 +86,7 @@ func (Dialector) QuoteTo(writer clause.Writer, str string) {
 		case '"':
 			continuousQuote++
 			if continuousQuote == 2 {
-				writer.WriteString(`""`)
+				writeString(writer, `""`)
 				continuousQuote = 0
 			}
 		case '.':
@@ -93,32 +94,42 @@ func (Dialector) QuoteTo(writer clause.Writer, str string) {
 				shiftDelimiter = 0
 				underQuoted = false
 				continuousQuote = 0
-				writer.WriteByte('"')
+				writeByte(writer, '"')
 			}
-			writer.WriteByte(v)
+			writeByte(writer, v)
 			continue
 		default:
 			if shiftDelimiter-continuousQuote <= 0 && !underQuoted {
-				writer.WriteByte('"')
+				writeByte(writer, '"')
 				underQuoted = true
 				if selfQuoted = continuousQuote > 0; selfQuoted {
-					continuousQuote -= 1
+					continuousQuote--
 				}
 			}
 
-			for ; continuousQuote > 0; continuousQuote -= 1 {
-				writer.WriteString(`""`)
+			for ; continuousQuote > 0; continuousQuote-- {
+				writeString(writer, `""`)
 			}
 
-			writer.WriteByte(v)
+			writeByte(writer, v)
 		}
 		shiftDelimiter++
 	}
 
 	if continuousQuote > 0 && !selfQuoted {
-		writer.WriteString(`""`)
+		writeString(writer, `""`)
 	}
-	writer.WriteByte('"')
+	writeByte(writer, '"')
+}
+
+func writeByte(writer clause.Writer, value byte) {
+	//nolint:errcheck
+	_ = writer.WriteByte(value)
+}
+
+func writeString(writer clause.Writer, value string) {
+	//nolint:errcheck
+	_, _ = writer.WriteString(value)
 }
 
 // Explain returns SQL with rendered parameters for logging.

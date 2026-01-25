@@ -52,7 +52,7 @@ func (c *pinotConn) Begin() (driver.Tx, error) {
 	return nil, errReadOnly
 }
 
-func (c *pinotConn) PrepareContext(ctx context.Context, query string) (driver.Stmt, error) {
+func (c *pinotConn) PrepareContext(_ context.Context, query string) (driver.Stmt, error) {
 	return c.Prepare(query)
 }
 

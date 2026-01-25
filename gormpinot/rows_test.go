@@ -6,8 +6,9 @@ import (
 	"io"
 	"testing"
 
-	"github.com/startreedata/pinot-client-go/pinot"
 	"github.com/stretchr/testify/require"
+
+	"github.com/startreedata/pinot-client-go/pinot"
 )
 
 func TestResultTableRowsNext(t *testing.T) {
