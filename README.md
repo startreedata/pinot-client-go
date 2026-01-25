@@ -167,6 +167,45 @@ if err != nil {
 log.Infof("Query Stats: response time - %d ms, scanned docs - %d, total docs - %d", brokerResp.TimeUsedMs, brokerResp.NumDocsScanned, brokerResp.TotalDocs)
 ```
 
+## Query Pinot with GORM
+
+Use the GORM dialector to build read-only queries against Pinot SQL:
+
+```go
+conn, err := pinot.NewFromBrokerList([]string{"localhost:8000"})
+if err != nil {
+	log.Error(err)
+}
+
+db, err := gorm.Open(gormpinot.Open(gormpinot.Config{
+	Conn:         conn,
+	DefaultTable: "baseballStats",
+}), &gorm.Config{})
+if err != nil {
+	log.Error(err)
+}
+
+type Player struct {
+	PlayerName string `gorm:"column:playerName"`
+	TeamID     string `gorm:"column:teamID"`
+	YearID     int    `gorm:"column:yearID"`
+	HomeRuns   int    `gorm:"column:homeRuns"`
+}
+
+var players []Player
+err = db.Table("baseballStats").
+	Select("playerName, teamID, yearID, homeRuns").
+	Where("teamID = ? AND yearID = ?", "OAK", 2004).
+	Order("homeRuns DESC").
+	Limit(5).
+	Find(&players).Error
+if err != nil {
+	log.Error(err)
+}
+```
+
+See `examples/gorm-example/main.go` for a runnable example.
+
 ## Query Pinot with Multi-Stage Engine
 
 Please see this [example](https://github.com/startreedata/pinot-client-go/blob/master/examples/multistage-quickstart/main.go) for your reference.

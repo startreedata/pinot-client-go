@@ -62,14 +62,18 @@ func NewWithConfig(config *ClientConfig) (*Connection, error) {
 
 // NewWithConfigAndClient create a new Pinot connection with pre-created http client.
 func NewWithConfigAndClient(config *ClientConfig, httpClient *http.Client) (*Connection, error) {
-	transport := &jsonAsyncHTTPClientTransport{
-		client: httpClient,
-		header: config.ExtraHTTPHeader,
+	client := httpClient
+	if client == nil {
+		client = http.DefaultClient
 	}
-
-	// Set HTTPTimeout from config
 	if config.HTTPTimeout != 0 {
-		transport.client.Timeout = config.HTTPTimeout
+		clientCopy := *client
+		clientCopy.Timeout = config.HTTPTimeout
+		client = &clientCopy
+	}
+	transport := &jsonAsyncHTTPClientTransport{
+		client: client,
+		header: config.ExtraHTTPHeader,
 	}
 
 	var conn *Connection
@@ -96,7 +100,7 @@ func NewWithConfigAndClient(config *ClientConfig, httpClient *http.Client) (*Con
 			transport: transport,
 			brokerSelector: &controllerBasedSelector{
 				config: config.ControllerConfig,
-				client: http.DefaultClient,
+				client: transport.client,
 			},
 			useMultistageEngine: config.UseMultistageEngine,
 		}

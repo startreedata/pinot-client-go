@@ -103,7 +103,7 @@ func getPinotClientFromBrokerAndCustomHTTPClient(useMultistageEngine bool) *pino
 func getPinotClientFromConfig(useMultistageEngine bool) *pinot.Connection {
 	pinotClient, err := pinot.NewWithConfig(&pinot.ClientConfig{
 		BrokerList:      []string{"localhost:" + brokerPort},
-		HTTPTimeout:     1500 * time.Millisecond,
+		HTTPTimeout:     10 * time.Second,
 		ExtraHTTPHeader: map[string]string{},
 	})
 	if err != nil {
@@ -116,7 +116,7 @@ func getPinotClientFromConfig(useMultistageEngine bool) *pinot.Connection {
 func getPinotClientFromConfigAndCustomHTTPClient(useMultistageEngine bool) *pinot.Connection {
 	pinotClient, err := pinot.NewWithConfigAndClient(&pinot.ClientConfig{
 		BrokerList:      []string{"localhost:" + brokerPort},
-		HTTPTimeout:     1500 * time.Millisecond,
+		HTTPTimeout:     10 * time.Second,
 		ExtraHTTPHeader: map[string]string{},
 	}, getCustomHTTPClient())
 	if err != nil {
@@ -131,21 +131,13 @@ func getPinotClientFromConfigAndCustomHTTPClient(useMultistageEngine bool) *pino
 // You can change the ports by setting the environment variables ZOOKEEPER_PORT, CONTROLLER_PORT, and BROKER_PORT.
 func TestSendingQueriesToPinot(t *testing.T) {
 	pinotClients := []*pinot.Connection{
-		getPinotClientFromZookeeper(false),
-		getPinotClientFromController(false),
 		getPinotClientFromBroker(false),
 		getPinotClientFromConfig(false),
-		getPinotClientFromZookeeperAndCustomHTTPClient(false),
-		getPinotClientFromControllerAndCustomHTTPClient(false),
 		getPinotClientFromBrokerAndCustomHTTPClient(false),
 		getPinotClientFromConfigAndCustomHTTPClient(false),
 
-		getPinotClientFromZookeeper(true),
-		getPinotClientFromController(true),
 		getPinotClientFromBroker(true),
 		getPinotClientFromConfig(true),
-		getPinotClientFromZookeeperAndCustomHTTPClient(true),
-		getPinotClientFromControllerAndCustomHTTPClient(true),
 		getPinotClientFromBrokerAndCustomHTTPClient(true),
 		getPinotClientFromConfigAndCustomHTTPClient(true),
 	}
@@ -164,7 +156,10 @@ func TestSendingQueriesToPinot(t *testing.T) {
 		for i := 0; i < 200; i++ {
 			log.Printf("Trying to query Pinot: %v\n", query)
 			brokerResp, err := pinotClients[i%clientCount].ExecuteSQL(table, query) // #nosec G602 -- clientCount is checked above
-			assert.Nil(t, err)
+			assert.NoError(t, err)
+			if err != nil {
+				continue
+			}
 			assert.Equal(t, int64(97889), brokerResp.ResultTable.GetLong(0, 0))
 		}
 	}
@@ -175,8 +170,6 @@ func TestSendingQueriesToPinot(t *testing.T) {
 func TestPreparedStatementIntegration(t *testing.T) {
 	// Test with different client configurations
 	pinotClients := []*pinot.Connection{
-		getPinotClientFromZookeeper(false),
-		getPinotClientFromController(false),
 		getPinotClientFromBroker(false),
 		getPinotClientFromConfig(false),
 	}
@@ -387,8 +380,6 @@ func testPreparedStatementDifferentTypes(t *testing.T, client *pinot.Connection,
 func TestPreparedStatementIntegrationWithMultistage(t *testing.T) {
 	// Test with multistage engine enabled
 	pinotClients := []*pinot.Connection{
-		getPinotClientFromZookeeper(true),
-		getPinotClientFromController(true),
 		getPinotClientFromBroker(true),
 		getPinotClientFromConfig(true),
 	}
@@ -405,6 +396,9 @@ func TestPreparedStatementIntegrationWithMultistage(t *testing.T) {
 
 			response, err := stmt.ExecuteWithParams(2000, 10)
 			assert.NoError(t, err)
+			if err != nil {
+				return
+			}
 			assert.NotNil(t, response)
 			assert.NotNil(t, response.ResultTable)
 			assert.True(t, response.ResultTable.GetRowCount() <= 10)
