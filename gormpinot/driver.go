@@ -126,6 +126,17 @@ func (s *pinotStmt) Query(args []driver.Value) (driver.Rows, error) {
 	return s.conn.QueryContext(context.Background(), s.query, named)
 }
 
+func (s *pinotStmt) ExecContext(ctx context.Context, args []driver.NamedValue) (driver.Result, error) {
+	if !isReadQuery(s.query) {
+		return nil, errReadOnly
+	}
+	return s.conn.ExecContext(ctx, s.query, args)
+}
+
+func (s *pinotStmt) QueryContext(ctx context.Context, args []driver.NamedValue) (driver.Rows, error) {
+	return s.conn.QueryContext(ctx, s.query, args)
+}
+
 type pinotResult struct {
 	rowsAffected int64
 }

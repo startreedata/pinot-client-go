@@ -110,6 +110,14 @@ func TestCreateControllerRequest(t *testing.T) {
 	assert.Equal(t, "bar", r.Header.Get("foo1"))
 }
 
+func TestCreateControllerRequestInvalidURL(t *testing.T) {
+	s := &controllerBasedSelector{
+		controllerAPIReqURL: "http://[::1]:namedport",
+	}
+	_, err := s.createControllerRequest()
+	assert.NotNil(t, err)
+}
+
 func TestUpdateBrokerData(t *testing.T) {
 	s := &controllerBasedSelector{
 		config: &ControllerConfig{
@@ -188,6 +196,23 @@ func (errReader) Close() error {
 	return nil
 }
 
+type errCloseReader struct {
+	data []byte
+	read bool
+}
+
+func (r *errCloseReader) Read(p []byte) (int, error) {
+	if r.read {
+		return 0, io.EOF
+	}
+	r.read = true
+	return copy(p, r.data), io.EOF
+}
+
+func (r *errCloseReader) Close() error {
+	return errors.New("close error")
+}
+
 func TestUpdateBrokerDataResponseReadError(t *testing.T) {
 	s := &controllerBasedSelector{
 		config: &ControllerConfig{
@@ -201,6 +226,23 @@ func TestUpdateBrokerDataResponseReadError(t *testing.T) {
 	err := s.updateBrokerData()
 	assert.NotNil(t, err)
 	assert.True(t, strings.Contains(err.Error(), "reading controller API response"))
+}
+
+func TestUpdateBrokerDataCloseError(t *testing.T) {
+	s := &controllerBasedSelector{
+		config: &ControllerConfig{
+			ControllerAddress: "localhost:9000",
+		},
+		client: &MockHTTPClientSuccess{
+			statusCode: 200,
+			body: &errCloseReader{
+				data: []byte(`{"baseballStats":[{"port":8000,"host":"127.0.0.1","instanceName":"Broker_127.0.0.1_8000"}]}`),
+			},
+		},
+	}
+	err := s.updateBrokerData()
+	assert.Nil(t, err)
+	assert.ElementsMatch(t, s.allBrokerList, []string{"127.0.0.1:8000"})
 }
 
 func TestUpdateBrokerDataUnexpectedHTTPStatus(t *testing.T) {

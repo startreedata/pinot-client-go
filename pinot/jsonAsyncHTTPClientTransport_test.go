@@ -2,12 +2,29 @@ package pinot
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 )
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) {
+	return f(r)
+}
+
+type errBody struct{}
+
+func (errBody) Read(_ []byte) (int, error) {
+	return 0, assert.AnError
+}
+
+func (errBody) Close() error {
+	return nil
+}
 
 func TestGetQueryTemplate(t *testing.T) {
 	assert.Equal(t, "http://%s/query/sql", getQueryTemplate("sql", "localhost:8000"))
@@ -59,6 +76,70 @@ func TestJsonAsyncHTTPClientTransport(t *testing.T) {
 	})
 	assert.NotNil(t, err)
 	assert.True(t, strings.Contains(err.Error(), "Post "))
+}
+
+func TestJsonAsyncHTTPClientTransportNonOKResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	transport := &jsonAsyncHTTPClientTransport{
+		client: server.Client(),
+		header: map[string]string{},
+	}
+
+	_, err := transport.execute(server.URL, &Request{
+		queryFormat: "sql",
+		query:       "select * from baseballStats limit 1",
+	})
+	assert.NotNil(t, err)
+	assert.True(t, strings.Contains(err.Error(), "http exception"))
+}
+
+func TestJsonAsyncHTTPClientTransportTraceAndOptions(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, err := w.Write([]byte(`{"resultTable":{"dataSchema":{"columnDataTypes":["LONG"],"columnNames":["id"]},"rows":[[1]]},"exceptions":[]}`))
+		assert.NoError(t, err)
+	}))
+	defer server.Close()
+
+	transport := &jsonAsyncHTTPClientTransport{
+		client: &http.Client{Timeout: 500 * time.Millisecond},
+		header: map[string]string{"x-test": "1"},
+	}
+
+	_, err := transport.execute(server.URL, &Request{
+		queryFormat:         "sql",
+		query:               "select * from baseballStats limit 1",
+		useMultistageEngine: true,
+		trace:               true,
+	})
+	assert.NoError(t, err)
+}
+
+func TestJsonAsyncHTTPClientTransportReadError(t *testing.T) {
+	client := &http.Client{
+		Transport: roundTripFunc(func(_ *http.Request) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       errBody{},
+			}, nil
+		}),
+	}
+
+	transport := &jsonAsyncHTTPClientTransport{
+		client: client,
+		header: map[string]string{},
+	}
+
+	_, err := transport.execute("http://example.com", &Request{
+		queryFormat: "sql",
+		query:       "select * from baseballStats limit 1",
+	})
+	assert.NotNil(t, err)
+	assert.True(t, strings.Contains(err.Error(), "unable to read Pinot response"))
 }
 
 func TestBuildQueryOptions(t *testing.T) {
