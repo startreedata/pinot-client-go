@@ -9,6 +9,21 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type fakeZkClient struct {
+	getBytes []byte
+	getErr   error
+	getWErr  error
+	watch    <-chan zk.Event
+}
+
+func (f *fakeZkClient) Get(_ string) ([]byte, *zk.Stat, error) {
+	return f.getBytes, &zk.Stat{}, f.getErr
+}
+
+func (f *fakeZkClient) GetW(_ string) ([]byte, *zk.Stat, <-chan zk.Event, error) {
+	return nil, &zk.Stat{}, f.watch, f.getWErr
+}
+
 func TestExtractBrokers(t *testing.T) {
 	brokers := extractBrokers(map[string]string{
 		"BROKER_broker-1_1000": "ONLINE",
@@ -41,6 +56,117 @@ func TestErrorInit(t *testing.T) {
 	}
 	err := selector.init()
 	assert.NotNil(t, err)
+}
+
+func TestInitSuccess(t *testing.T) {
+	originalConnect := zkConnect
+	watch := make(chan zk.Event)
+	defer func() {
+		zkConnect = originalConnect
+		close(watch)
+	}()
+
+	zkConnect = func(_ []string, _ time.Duration) (zkClient, <-chan zk.Event, error) {
+		return &fakeZkClient{
+			getBytes: []byte(`{"id":"brokerResource","mapFields":{"baseballStats_OFFLINE":{"Broker_127.0.0.1_8000":"ONLINE"}}}`),
+			watch:    watch,
+		}, watch, nil
+	}
+
+	selector := &dynamicBrokerSelector{
+		zkConfig: &ZookeeperConfig{
+			ZookeeperPath:     []string{"localhost:2123"},
+			PathPrefix:        "/QuickStartCluster",
+			SessionTimeoutSec: 1,
+		},
+	}
+	err := selector.init()
+	assert.NoError(t, err)
+	assert.Equal(t, "127.0.0.1:8000", selector.allBrokerList[0])
+	assert.Len(t, selector.tableBrokerMap["baseballStats"], 1)
+}
+
+func TestInitGetWError(t *testing.T) {
+	originalConnect := zkConnect
+	defer func() { zkConnect = originalConnect }()
+
+	zkConnect = func(_ []string, _ time.Duration) (zkClient, <-chan zk.Event, error) {
+		return &fakeZkClient{
+			getBytes: []byte(`{"id":"brokerResource","mapFields":{}}`),
+			getWErr:  fmt.Errorf("getw failed"),
+		}, nil, nil
+	}
+
+	selector := &dynamicBrokerSelector{
+		zkConfig: &ZookeeperConfig{
+			ZookeeperPath:     []string{"localhost:2123"},
+			PathPrefix:        "/QuickStartCluster",
+			SessionTimeoutSec: 1,
+		},
+	}
+	err := selector.init()
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "failed to set a watcher")
+}
+
+func TestSetupWatcherHandlesEvents(_ *testing.T) {
+	selector := &dynamicBrokerSelector{
+		externalViewZkPath: "path",
+	}
+	selector.readZNode = func(_ string) ([]byte, error) {
+		return []byte(`{"id":"brokerResource","mapFields":{"baseballStats_OFFLINE":{"Broker_127.0.0.1_8000":"ONLINE"}}}`), nil
+	}
+
+	ch := make(chan zk.Event, 2)
+	ch <- zk.Event{Err: fmt.Errorf("watch error")}
+	ch <- zk.Event{Type: zk.EventNodeDataChanged}
+	selector.externalViewZnodeWatch = ch
+
+	go selector.setupWatcher()
+
+	close(ch)
+	time.Sleep(50 * time.Millisecond)
+}
+
+func TestInitRefreshExternalViewError(t *testing.T) {
+	originalConnect := zkConnect
+	defer func() { zkConnect = originalConnect }()
+
+	zkConnect = func(_ []string, _ time.Duration) (zkClient, <-chan zk.Event, error) {
+		return &fakeZkClient{
+			getErr: fmt.Errorf("read error"),
+			watch:  make(chan zk.Event),
+		}, make(chan zk.Event), nil
+	}
+
+	selector := &dynamicBrokerSelector{
+		zkConfig: &ZookeeperConfig{
+			ZookeeperPath:     []string{"localhost:2123"},
+			PathPrefix:        "/QuickStartCluster",
+			SessionTimeoutSec: 1,
+		},
+	}
+	err := selector.init()
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "failed to read zk")
+}
+
+func TestSetupWatcherRefreshError(_ *testing.T) {
+	selector := &dynamicBrokerSelector{
+		externalViewZkPath: "path",
+	}
+	selector.readZNode = func(_ string) ([]byte, error) {
+		return nil, fmt.Errorf("read error")
+	}
+
+	ch := make(chan zk.Event, 1)
+	ch <- zk.Event{Type: zk.EventNodeDataChanged}
+	selector.externalViewZnodeWatch = ch
+
+	go selector.setupWatcher()
+
+	close(ch)
+	time.Sleep(50 * time.Millisecond)
 }
 
 func TestErrorRefreshExternalView(t *testing.T) {

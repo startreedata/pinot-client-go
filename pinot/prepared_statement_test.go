@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestConnection_Prepare(t *testing.T) {
@@ -302,6 +303,44 @@ func TestPreparedStatement_ComplexQueryFormattingLikeJava(t *testing.T) {
 		"ORDER BY totalHomeRuns DESC " +
 		"LIMIT 10"
 	assert.Equal(t, expected, query)
+}
+
+func TestPreparedStatement_BuildQueryErrors(t *testing.T) {
+	connection := &Connection{}
+	stmt, err := connection.Prepare("testTable", "SELECT * FROM testTable WHERE id = ?")
+	assert.NoError(t, err)
+
+	ps, ok := stmt.(*preparedStatement)
+	require.True(t, ok)
+	_, err = ps.buildQuery([]interface{}{})
+	assert.Error(t, err)
+
+	_, err = ps.buildQuery([]interface{}{struct{}{}})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to format parameter")
+}
+
+func TestPreparedStatement_ExecuteWithParamsFormatError(t *testing.T) {
+	connection := &Connection{}
+	stmt, err := connection.Prepare("testTable", "SELECT * FROM testTable WHERE id = ?")
+	assert.NoError(t, err)
+
+	_, err = stmt.ExecuteWithParams(struct{}{})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to build query")
+}
+
+func TestPreparedStatement_ExecuteFormatError(t *testing.T) {
+	connection := &Connection{}
+	stmt, err := connection.Prepare("testTable", "SELECT * FROM testTable WHERE id = ?")
+	assert.NoError(t, err)
+
+	err = stmt.Set(1, struct{}{})
+	assert.NoError(t, err)
+
+	_, err = stmt.Execute()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to build query")
 }
 
 func TestPreparedStatement_ConcurrentUsage(t *testing.T) {

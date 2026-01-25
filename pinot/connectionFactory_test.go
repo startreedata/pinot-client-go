@@ -1,12 +1,88 @@
 package pinot
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestNewWithConfigAndClientUsesDefaultClient(t *testing.T) {
+	conn, err := NewWithConfigAndClient(&ClientConfig{
+		BrokerList: []string{"localhost:8000"},
+	}, nil)
+	require.NoError(t, err)
+
+	transport, ok := conn.transport.(*jsonAsyncHTTPClientTransport)
+	require.True(t, ok)
+	require.Same(t, http.DefaultClient, transport.client)
+}
+
+func TestNewWithConfigAndClientUsesProvidedClient(t *testing.T) {
+	custom := &http.Client{}
+	conn, err := NewWithConfigAndClient(&ClientConfig{
+		BrokerList: []string{"localhost:8000"},
+	}, custom)
+	require.NoError(t, err)
+
+	transport, ok := conn.transport.(*jsonAsyncHTTPClientTransport)
+	require.True(t, ok)
+	require.Same(t, custom, transport.client)
+}
+
+func TestNewWithConfigAndClientCopiesTimeout(t *testing.T) {
+	baseClient := &http.Client{Timeout: 2 * time.Second}
+	conn, err := NewWithConfigAndClient(&ClientConfig{
+		BrokerList:  []string{"localhost:8000"},
+		HTTPTimeout: 5 * time.Second,
+	}, baseClient)
+	require.NoError(t, err)
+
+	require.Equal(t, 2*time.Second, baseClient.Timeout)
+	transport, ok := conn.transport.(*jsonAsyncHTTPClientTransport)
+	require.True(t, ok)
+	require.Equal(t, 5*time.Second, transport.client.Timeout)
+	require.NotSame(t, baseClient, transport.client)
+}
+
+func TestNewWithConfigAndClientNilClientWithTimeout(t *testing.T) {
+	defaultTimeout := http.DefaultClient.Timeout
+	conn, err := NewWithConfigAndClient(&ClientConfig{
+		BrokerList:  []string{"localhost:8000"},
+		HTTPTimeout: 3 * time.Second,
+	}, nil)
+	require.NoError(t, err)
+
+	transport, ok := conn.transport.(*jsonAsyncHTTPClientTransport)
+	require.True(t, ok)
+	require.NotSame(t, http.DefaultClient, transport.client)
+	require.Equal(t, defaultTimeout, http.DefaultClient.Timeout)
+}
+
+func TestNewWithConfigAndClientControllerConfig(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, err := w.Write([]byte(`{"baseballStats":[{"host":"localhost","port":8000,"instanceName":"Broker_1"}]}`))
+		require.NoError(t, err)
+	}))
+	defer server.Close()
+
+	conn, err := NewWithConfigAndClient(&ClientConfig{
+		ControllerConfig: &ControllerConfig{
+			ControllerAddress: server.URL,
+		},
+	}, &http.Client{})
+	require.NoError(t, err)
+
+	selector, ok := conn.brokerSelector.(*controllerBasedSelector)
+	require.True(t, ok)
+	require.NotNil(t, selector.client)
+}
 
 func TestPinotClients(t *testing.T) {
 	pinotClient1, err := NewFromZookeeper([]string{"localhost:12181"}, "", "QuickStartCluster")

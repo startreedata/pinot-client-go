@@ -19,9 +19,18 @@ const (
 // ReadZNode reads a ZNode content as bytes from Zookeeper
 type ReadZNode func(path string) ([]byte, error)
 
+type zkClient interface {
+	Get(path string) ([]byte, *zk.Stat, error)
+	GetW(path string) ([]byte, *zk.Stat, <-chan zk.Event, error)
+}
+
+var zkConnect = func(servers []string, timeout time.Duration) (zkClient, <-chan zk.Event, error) {
+	return zk.Connect(servers, timeout)
+}
+
 type dynamicBrokerSelector struct {
 	zkConfig               *ZookeeperConfig
-	zkConn                 *zk.Conn
+	zkConn                 zkClient
 	externalViewZnodeWatch <-chan zk.Event
 	readZNode              ReadZNode
 	externalViewZkPath     string
@@ -37,7 +46,7 @@ type externalView struct {
 
 func (s *dynamicBrokerSelector) init() error {
 	var err error
-	s.zkConn, _, err = zk.Connect(s.zkConfig.ZookeeperPath, time.Duration(s.zkConfig.SessionTimeoutSec)*time.Second)
+	s.zkConn, _, err = zkConnect(s.zkConfig.ZookeeperPath, time.Duration(s.zkConfig.SessionTimeoutSec)*time.Second)
 	if err != nil {
 		return fmt.Errorf("failed to connect to zookeeper: %v, error: %v", s.zkConfig.ZookeeperPath, err)
 	}

@@ -88,6 +88,9 @@ jobs:
           CONTROLLER_PORT_FORWARD: 9000
           BROKER_PORT_FORWARD: 8000
 
+      - name: GORM Example
+        run: go run ./examples/gorm-example
+
       - name: Integration Test
         run: make integration-test
         env:

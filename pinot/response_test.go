@@ -277,6 +277,30 @@ func TestResultTableGetMethodsWithInvalidInput(t *testing.T) {
 	assert.Equal(t, float64(123.456), resultTable.GetDouble(0, 2))
 }
 
+func TestResultTableGetNumberEdgeCases(t *testing.T) {
+	resultTable := ResultTable{
+		DataSchema: RespSchema{
+			ColumnDataTypes: []string{"INT", "INT", "LONG", "FLOAT", "FLOAT"},
+			ColumnNames:     []string{"int_overflow_float", "int_overflow_int", "long_overflow", "float_inf", "float_ok"},
+		},
+		Rows: [][]interface{}{
+			{
+				json.Number("2147483648.0"),         // int32 max + 1 (float)
+				json.Number("2147483648"),           // int32 max + 1 (int)
+				json.Number("9.223372036854776e19"), // beyond int64 range (float)
+				json.Number("inf"),                  // infinity without parse error
+				json.Number("3.14"),                 // valid float
+			},
+		},
+	}
+
+	assert.Equal(t, int32(0), resultTable.GetInt(0, 0))
+	assert.Equal(t, int32(0), resultTable.GetInt(0, 1))
+	assert.Equal(t, int64(0), resultTable.GetLong(0, 2))
+	assert.Equal(t, float32(0), resultTable.GetFloat(0, 3))
+	assert.Equal(t, float32(3.14), resultTable.GetFloat(0, 4))
+}
+
 func TestResultTableUtilityMethods(t *testing.T) {
 	resultTable := ResultTable{
 		DataSchema: RespSchema{
