@@ -83,13 +83,21 @@ jobs:
       - name: Set up Pinot Cluster
         run: make run-pinot-dist
         env:
-          PINOT_VERSION: 1.0.0
+          PINOT_VERSION: 1.4.0
           PINOT_HOME: /tmp/pinot
           CONTROLLER_PORT_FORWARD: 9000
           BROKER_PORT_FORWARD: 8000
+          BROKER_GRPC_PORT_FORWARD: 8010
 
-      - name: GORM Example
-        run: go run ./examples/gorm-example
+      - name: All Examples
+        run: |
+          set -euo pipefail
+          go run ./examples/batch-quickstart
+          go run ./examples/gorm-example
+          go run ./examples/grpc-broker-client
+          go run ./examples/json-batch-quickstart
+          go run ./examples/multistage-quickstart
+          go run ./examples/prepared-statement-example
 
       - name: Integration Test
         run: make integration-test
@@ -97,6 +105,7 @@ jobs:
           ZOOKEEPER_PORT: 2123
           CONTROLLER_PORT: 9000
           BROKER_PORT: 8000
+          BROKER_GRPC_PORT: 8010
 
       - name: Publish to coveralls.io
         uses: coverallsapp/github-action@v2

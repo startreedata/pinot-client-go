@@ -245,6 +245,14 @@ func TestUpdateBrokerDataCloseError(t *testing.T) {
 	assert.ElementsMatch(t, s.allBrokerList, []string{"127.0.0.1:8000"})
 }
 
+func TestUpdateBrokerDataCreateRequestError(t *testing.T) {
+	s := &controllerBasedSelector{
+		controllerAPIReqURL: "http://[::1]:namedport",
+	}
+	err := s.updateBrokerData()
+	assert.NotNil(t, err)
+}
+
 func TestUpdateBrokerDataUnexpectedHTTPStatus(t *testing.T) {
 	s := &controllerBasedSelector{
 		config: &ControllerConfig{

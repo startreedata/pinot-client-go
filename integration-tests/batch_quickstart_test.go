@@ -25,11 +25,12 @@ func getEnv(key, defaultValue string) string {
 }
 
 var (
+	brokerHost = getEnv("BROKER_HOST", "127.0.0.1")
 	brokerPort = getEnv("BROKER_PORT", "8000")
 )
 
 func getPinotClientFromBroker(useMultistageEngine bool) *pinot.Connection {
-	pinotClient, err := pinot.NewFromBrokerList([]string{"localhost:" + brokerPort})
+	pinotClient, err := pinot.NewFromBrokerList([]string{brokerHost + ":" + brokerPort})
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -55,7 +56,7 @@ func getCustomHTTPClient() *http.Client {
 }
 
 func getPinotClientFromBrokerAndCustomHTTPClient(useMultistageEngine bool) *pinot.Connection {
-	pinotClient, err := pinot.NewFromBrokerListAndClient([]string{"localhost:" + brokerPort}, getCustomHTTPClient())
+	pinotClient, err := pinot.NewFromBrokerListAndClient([]string{brokerHost + ":" + brokerPort}, getCustomHTTPClient())
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -65,7 +66,7 @@ func getPinotClientFromBrokerAndCustomHTTPClient(useMultistageEngine bool) *pino
 
 func getPinotClientFromConfig(useMultistageEngine bool) *pinot.Connection {
 	pinotClient, err := pinot.NewWithConfig(&pinot.ClientConfig{
-		BrokerList:      []string{"localhost:" + brokerPort},
+		BrokerList:      []string{brokerHost + ":" + brokerPort},
 		HTTPTimeout:     10 * time.Second,
 		ExtraHTTPHeader: map[string]string{},
 	})
@@ -78,7 +79,7 @@ func getPinotClientFromConfig(useMultistageEngine bool) *pinot.Connection {
 
 func getPinotClientFromConfigAndCustomHTTPClient(useMultistageEngine bool) *pinot.Connection {
 	pinotClient, err := pinot.NewWithConfigAndClient(&pinot.ClientConfig{
-		BrokerList:      []string{"localhost:" + brokerPort},
+		BrokerList:      []string{brokerHost + ":" + brokerPort},
 		HTTPTimeout:     10 * time.Second,
 		ExtraHTTPHeader: map[string]string{},
 	}, getCustomHTTPClient())

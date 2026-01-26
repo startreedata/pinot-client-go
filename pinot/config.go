@@ -6,6 +6,8 @@ import "time"
 type ClientConfig struct {
 	// Additional HTTP headers to include in broker query API requests
 	ExtraHTTPHeader map[string]string
+	// GrpcConfig enables gRPC broker queries when set
+	GrpcConfig *GrpcConfig
 	// Zookeeper Configs
 	ZkConfig *ZookeeperConfig
 	// Controller Config
@@ -16,6 +18,30 @@ type ClientConfig struct {
 	HTTPTimeout time.Duration
 	// UseMultistageEngine is a flag to enable multistage query execution engine
 	UseMultistageEngine bool
+}
+
+// GrpcConfig describes how to configure broker gRPC queries
+type GrpcConfig struct {
+	// Encoding controls result serialization. Supported values: JSON, ARROW.
+	Encoding string
+	// Compression controls response compression. Supported values: ZSTD, LZ4_FAST, LZ4_HIGH, DEFLATE, GZIP, SNAPPY, NONE.
+	Compression string
+	// BlockRowSize is the number of rows per response block.
+	BlockRowSize int
+	// Timeout controls gRPC request timeout.
+	Timeout time.Duration
+	// ExtraMetadata adds metadata entries to the gRPC request.
+	ExtraMetadata map[string]string
+	// TLS config for secure gRPC connections.
+	TLSConfig *GrpcTLSConfig
+}
+
+// GrpcTLSConfig configures TLS for gRPC connections.
+type GrpcTLSConfig struct {
+	Enabled            bool
+	CACertPath         string
+	ServerName         string
+	InsecureSkipVerify bool
 }
 
 // ZookeeperConfig describes how to config Pinot Zookeeper connection

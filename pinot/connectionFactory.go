@@ -10,6 +10,8 @@ const (
 	defaultZkSessionTimeoutSec = 60
 )
 
+var grpcTransportFactory = newGrpcBrokerClientTransport
+
 // NewFromBrokerList create a new Pinot connection with pre configured Pinot Broker list.
 func NewFromBrokerList(brokerList []string) (*Connection, error) {
 	return NewFromBrokerListAndClient(brokerList, http.DefaultClient)
@@ -71,9 +73,18 @@ func NewWithConfigAndClient(config *ClientConfig, httpClient *http.Client) (*Con
 		clientCopy.Timeout = config.HTTPTimeout
 		client = &clientCopy
 	}
-	transport := &jsonAsyncHTTPClientTransport{
-		client: client,
-		header: config.ExtraHTTPHeader,
+	var transport clientTransport
+	if config.GrpcConfig != nil {
+		grpcTransport, err := grpcTransportFactory(config.GrpcConfig)
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize grpc transport: %v", err)
+		}
+		transport = grpcTransport
+	} else {
+		transport = &jsonAsyncHTTPClientTransport{
+			client: client,
+			header: config.ExtraHTTPHeader,
+		}
 	}
 
 	var conn *Connection
@@ -100,7 +111,7 @@ func NewWithConfigAndClient(config *ClientConfig, httpClient *http.Client) (*Con
 			transport: transport,
 			brokerSelector: &controllerBasedSelector{
 				config: config.ControllerConfig,
-				client: transport.client,
+				client: client,
 			},
 			useMultistageEngine: config.UseMultistageEngine,
 		}

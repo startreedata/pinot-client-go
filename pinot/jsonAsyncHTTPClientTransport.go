@@ -17,6 +17,8 @@ var (
 	}
 )
 
+var jsonMarshal = json.Marshal
+
 // jsonAsyncHTTPClientTransport is the impl of clientTransport
 type jsonAsyncHTTPClientTransport struct {
 	client *http.Client
@@ -54,7 +56,7 @@ func (t jsonAsyncHTTPClientTransport) execute(brokerAddress string, query *Reque
 	if query.trace {
 		requestJSON["trace"] = "true"
 	}
-	jsonValue, err := json.Marshal(requestJSON)
+	jsonValue, err := jsonMarshal(requestJSON)
 	if err != nil {
 		log.Error("Unable to marshal request to JSON. ", err)
 		return nil, err
