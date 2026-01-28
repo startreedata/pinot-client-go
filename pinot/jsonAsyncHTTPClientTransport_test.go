@@ -26,6 +26,18 @@ func (errBody) Close() error {
 	return nil
 }
 
+type errCloseBody struct {
+	reader *strings.Reader
+}
+
+func (b *errCloseBody) Read(p []byte) (int, error) {
+	return b.reader.Read(p)
+}
+
+func (b *errCloseBody) Close() error {
+	return assert.AnError
+}
+
 func TestGetQueryTemplate(t *testing.T) {
 	assert.Equal(t, "http://%s/query/sql", getQueryTemplate("sql", "localhost:8000"))
 	assert.Equal(t, "http://%s/query", getQueryTemplate("pql", "localhost:8000"))
@@ -119,6 +131,45 @@ func TestJsonAsyncHTTPClientTransportTraceAndOptions(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestJsonAsyncHTTPClientTransportInvalidJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, err := w.Write([]byte(`{"resultTable":`))
+		assert.NoError(t, err)
+	}))
+	defer server.Close()
+
+	transport := &jsonAsyncHTTPClientTransport{
+		client: server.Client(),
+		header: map[string]string{},
+	}
+
+	_, err := transport.execute(server.URL, &Request{
+		queryFormat: "sql",
+		query:       "select * from baseballStats limit 1",
+	})
+	assert.Error(t, err)
+}
+
+func TestJsonAsyncHTTPClientTransportMarshalError(t *testing.T) {
+	originalMarshal := jsonMarshal
+	jsonMarshal = func(interface{}) ([]byte, error) {
+		return nil, assert.AnError
+	}
+	t.Cleanup(func() { jsonMarshal = originalMarshal })
+
+	transport := &jsonAsyncHTTPClientTransport{
+		client: http.DefaultClient,
+		header: map[string]string{},
+	}
+
+	_, err := transport.execute("localhost:8000", &Request{
+		queryFormat: "sql",
+		query:       "select * from baseballStats limit 1",
+	})
+	assert.Error(t, err)
+}
+
 func TestJsonAsyncHTTPClientTransportReadError(t *testing.T) {
 	client := &http.Client{
 		Transport: roundTripFunc(func(_ *http.Request) (*http.Response, error) {
@@ -140,6 +191,29 @@ func TestJsonAsyncHTTPClientTransportReadError(t *testing.T) {
 	})
 	assert.NotNil(t, err)
 	assert.True(t, strings.Contains(err.Error(), "unable to read Pinot response"))
+}
+
+func TestJsonAsyncHTTPClientTransportCloseError(t *testing.T) {
+	client := &http.Client{
+		Transport: roundTripFunc(func(_ *http.Request) (*http.Response, error) {
+			body := &errCloseBody{reader: strings.NewReader(`{"resultTable":{"dataSchema":{"columnDataTypes":["LONG"],"columnNames":["id"]},"rows":[[1]]},"exceptions":[]}`)}
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       body,
+			}, nil
+		}),
+	}
+
+	transport := &jsonAsyncHTTPClientTransport{
+		client: client,
+		header: map[string]string{},
+	}
+
+	_, err := transport.execute("http://example.com", &Request{
+		queryFormat: "sql",
+		query:       "select * from baseballStats limit 1",
+	})
+	assert.NoError(t, err)
 }
 
 func TestBuildQueryOptions(t *testing.T) {

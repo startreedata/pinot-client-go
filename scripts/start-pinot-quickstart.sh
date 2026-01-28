@@ -2,8 +2,8 @@
 
 # Set the Pinot version
 if [ -z "${PINOT_VERSION}" ]; then
-  echo "PINOT_VERSION is not set. Using default version 1.3.0"
-  PINOT_VERSION="1.3.0"
+  echo "PINOT_VERSION is not set. Using default version 1.4.0"
+  PINOT_VERSION="1.4.0"
 fi
 
 # Set the download URL
@@ -21,26 +21,58 @@ if [ -z "${BROKER_PORT_FORWARD}" ]; then
   BROKER_PORT_FORWARD="8000"
 fi
 
+# Set the broker gRPC port
+if [ -z "${BROKER_GRPC_PORT_FORWARD}" ]; then
+  echo "BROKER_GRPC_PORT_FORWARD is not set. Using default port 8010"
+  BROKER_GRPC_PORT_FORWARD="8010"
+fi
+
 # Create the destination directory
 mkdir -p "${PINOT_HOME}"
+
+# Write quickstart config overrides (Pinot 1.4 does not support -brokerGrpcPort)
+QUICKSTART_CONFIG_FILE="${PINOT_HOME}/quickstart-config.properties"
+cat > "${QUICKSTART_CONFIG_FILE}" <<EOF
+pinot.broker.grpc.port=${BROKER_GRPC_PORT_FORWARD}
+EOF
+
+cat "${QUICKSTART_CONFIG_FILE}"
 
 # Check if the directory exists
 if [ -d "${PINOT_HOME}/apache-pinot-${PINOT_VERSION}-bin" ]; then
     echo "Pinot package already exists in ${PINOT_HOME}/apache-pinot-${PINOT_VERSION}-bin"
 else
-    # Download the Pinot package
-    curl  --parallel -L "${DOWNLOAD_URL}" -o "${PINOT_HOME}/apache-pinot-${PINOT_VERSION}-bin.tar.gz"
+    TAR_PATH="${PINOT_HOME}/apache-pinot-${PINOT_VERSION}-bin.tar.gz"
+    CHECKSUM_URL="${DOWNLOAD_URL}.sha512"
+
+    if [ -f "${TAR_PATH}" ]; then
+        REMOTE_SHA=$(curl -fsSL "${CHECKSUM_URL}" | cut -d ' ' -f 1)
+        LOCAL_SHA=$(shasum -a 512 "${TAR_PATH}" | cut -d ' ' -f 1)
+        if [ "${REMOTE_SHA}" != "${LOCAL_SHA}" ]; then
+            echo "Checksum mismatch for ${TAR_PATH}. Re-downloading."
+            rm "${TAR_PATH}"
+        fi
+    fi
+
+    if [ ! -f "${TAR_PATH}" ]; then
+        # Download the Pinot package
+        curl -L "${DOWNLOAD_URL}" -o "${TAR_PATH}"
+    fi
 
     # Extract the downloaded package
-    tar -xzf "${PINOT_HOME}/apache-pinot-${PINOT_VERSION}-bin.tar.gz" -C "${PINOT_HOME}"
+    tar -xzf "${TAR_PATH}" -C "${PINOT_HOME}"
 
     # Remove the downloaded package
-    rm "${PINOT_HOME}/apache-pinot-${PINOT_VERSION}-bin.tar.gz"
+    rm "${TAR_PATH}"
 fi
 
 
 # Start the Pinot cluster
-${PINOT_HOME}/apache-pinot-${PINOT_VERSION}-bin/bin/pinot-admin.sh QuickStart -type MULTI_STAGE &
+# NOTE: QuickStart type is explicitly set to BATCH. This differs from MULTI_STAGE
+# QuickStart and changes how queries are executed and how the cluster behaves.
+# If changing this type (e.g., to MULTI_STAGE), document the rationale and
+# behavioral impact in the PR description and/or in this script.
+${PINOT_HOME}/apache-pinot-${PINOT_VERSION}-bin/bin/pinot-admin.sh QuickStart -type BATCH -configFile "${QUICKSTART_CONFIG_FILE}" &
 PID=$!
 
 # Print the JVM settings

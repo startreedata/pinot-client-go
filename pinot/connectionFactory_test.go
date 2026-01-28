@@ -1,6 +1,7 @@
 package pinot
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -82,6 +83,39 @@ func TestNewWithConfigAndClientControllerConfig(t *testing.T) {
 	selector, ok := conn.brokerSelector.(*controllerBasedSelector)
 	require.True(t, ok)
 	require.NotNil(t, selector.client)
+}
+
+func TestNewWithConfigAndClientGrpcTransport(t *testing.T) {
+	conn, err := NewWithConfigAndClient(&ClientConfig{
+		BrokerList: []string{"localhost:8000"},
+		GrpcConfig: &GrpcConfig{
+			Encoding:     "JSON",
+			Compression:  "NONE",
+			BlockRowSize: 1,
+		},
+	}, nil)
+	require.NoError(t, err)
+
+	_, ok := conn.transport.(*grpcBrokerClientTransport)
+	require.True(t, ok)
+}
+
+func TestNewWithConfigAndClientGrpcTransportError(t *testing.T) {
+	original := grpcTransportFactory
+	grpcTransportFactory = func(_ *GrpcConfig) (*grpcBrokerClientTransport, error) {
+		return nil, errors.New("transport error")
+	}
+	t.Cleanup(func() { grpcTransportFactory = original })
+
+	_, err := NewWithConfigAndClient(&ClientConfig{
+		BrokerList: []string{"localhost:8000"},
+		GrpcConfig: &GrpcConfig{
+			Encoding:     "JSON",
+			Compression:  "NONE",
+			BlockRowSize: 1,
+		},
+	}, nil)
+	assert.Error(t, err)
 }
 
 func TestPinotClients(t *testing.T) {

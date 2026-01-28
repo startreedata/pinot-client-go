@@ -1,6 +1,6 @@
 # Pinot Client GO
 
-[![Go 1.19](https://img.shields.io/badge/go-1.19-blue.svg)](https://golang.org/dl/#go1.19)
+[![Go 1.24](https://img.shields.io/badge/go-1.24-blue.svg)](https://golang.org/dl/#go1.24)
 [![GoDoc](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white)](https://pkg.go.dev/github.com/startreedata/pinot-client-go)
 [![Build Status](https://github.com/startreedata/pinot-client-go/actions/workflows/tests.yml/badge.svg)](https://github.com/startreedata/pinot-client-go/actions/workflows/tests.yml)
 [![Coverage Status](https://coveralls.io/repos/github/startreedata/pinot-client-go/badge.svg?branch=master)](https://coveralls.io/github/startreedata/pinot-client-go?branch=master)
@@ -146,6 +146,26 @@ pinotClient, err := pinot.NewWithConfig(&pinot.ClientConfig{
     },
 	// optional HTTP timeout parameter for Pinot Queries.
 	HTTPTimeout: 300 * time.Millisecond,
+})
+```
+
+### gRPC broker queries
+
+Pinot brokers expose a gRPC query endpoint when configured with `pinot.broker.grpc.port`. See the Pinot gRPC broker API docs for configuration details and TLS setup: https://docs.pinot.apache.org/users/api/broker-grpc-api  
+
+```go
+pinotClient, err := pinot.NewWithConfig(&pinot.ClientConfig{
+	BrokerList: []string{"localhost:8010"},
+	GrpcConfig: &pinot.GrpcConfig{
+		Encoding:     "JSON",  // or "ARROW"
+		Compression:  "ZSTD",
+		BlockRowSize: 10000,
+		Timeout:      5 * time.Second,
+		// TLSConfig: &pinot.GrpcTLSConfig{
+		// 	Enabled:    true,
+		// 	CACertPath: "/path/to/ca.pem",
+		// },
+	},
 })
 ```
 
@@ -534,4 +554,3 @@ Go to [Github Release](https://github.com/startreedata/pinot-client-go/releases)
 The published Release will be available in [Go Modules](https://pkg.go.dev/github.com/startreedata/pinot-client-go).
 
 If not available, go to the corresponding new version page (https://pkg.go.dev/github.com/startreedata/pinot-client-go@v0.5.0) and click on the "Request New Version" button.
-

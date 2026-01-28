@@ -49,7 +49,7 @@ stop-pinot-dist:
 
 .PHONY: run-pinot-docker
 run-pinot-docker:
-	docker run --name pinot-quickstart -p 2123:2123 -p 9000:9000 -p 8000:8000 apachepinot/pinot:latest QuickStart -type MULTI_STAGE
+	docker run --name pinot-quickstart -p 2123:2123 -p 9000:9000 -p 8000:8000 -p 8010:8010 apachepinot/pinot:latest QuickStart -type MULTI_STAGE
 
 .PHONY: stop-pinot-docker
 stop-pinot-docker:
@@ -59,3 +59,15 @@ stop-pinot-docker:
 .PHONY: integration-test
 integration-test: build
 	go test -timeout 500s -v -race -covermode atomic -coverprofile=coverage.out $(INTEGRATION_TESTS_PACKAGES)
+
+.PHONY: coverage-check
+coverage-check: test
+	./scripts/check-coverage.sh
+
+.PHONY: coverage-baseline
+coverage-baseline: test
+	./scripts/update-coverage-baseline.sh
+
+.PHONY: hooks
+hooks:
+	git config core.hooksPath .githooks
