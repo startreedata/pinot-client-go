@@ -7,6 +7,7 @@
 batch-quickstart
 logs/
 examples/batch/
+.githooks/
 
 # Test binary, built with `go test -c`
 *.test
@@ -15,6 +16,7 @@ examples/batch/
 *.out
 coverage.html
 profile.cov
+coverage.baseline
 
 # Dependency directories (remove the comment below to include it)
 # vendor/

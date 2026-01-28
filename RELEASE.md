@@ -64,6 +64,27 @@ Invalid examples:
 - Usage examples
 - Link to full changelog on GitHub
 
+### Suggested Release Notes Template
+If a release adds or changes broker behavior, include a short usage note so users can copy/paste.
+
+Example snippet:
+````markdown
+## Usage (Broker)
+Pinot brokers can be queried over gRPC when `pinot.broker.grpc.port` is enabled.
+
+```go
+pinotClient, err := pinot.NewWithConfig(&pinot.ClientConfig{
+    BrokerList: []string{"localhost:8010"},
+    GrpcConfig: &pinot.GrpcConfig{
+        Encoding:     "JSON",  // or "ARROW"
+        Compression:  "ZSTD",
+        BlockRowSize: 10000,
+        Timeout:      5 * time.Second,
+    },
+})
+```
+````
+
 ### Major Version Tags
 For stable releases, the workflow also updates major version tags (e.g., `v1` for `v1.2.3`) to allow users to get the latest version within a major version.
 
@@ -109,4 +130,4 @@ You can also create releases manually without the workflow:
 5. Fill in the release notes
 6. Publish the release
 
-However, the automated workflow is recommended for consistency. 
+However, the automated workflow is recommended for consistency.
