@@ -4,7 +4,7 @@ require (
 	github.com/apache/arrow/go/v15 v15.0.2
 	github.com/go-zookeeper/zk v1.0.4
 	github.com/golang/snappy v1.0.0
-	github.com/klauspost/compress v1.18.3
+	github.com/klauspost/compress v1.18.4
 	github.com/pierrec/lz4/v4 v4.1.25
 	github.com/sirupsen/logrus v1.9.4
 	github.com/stretchr/testify v1.11.1
