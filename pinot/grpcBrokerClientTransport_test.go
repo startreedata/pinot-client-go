@@ -776,7 +776,7 @@ func requireUint32Length(t *testing.T, n int) uint32 {
 	if n < 0 || n > int(^uint32(0)) {
 		t.Fatalf("payload too large: %d", n)
 	}
-	return uint32(n)
+	return uint32(n) // #nosec G115 -- bounds checked above
 }
 
 func TestArrowListDecoders(t *testing.T) {

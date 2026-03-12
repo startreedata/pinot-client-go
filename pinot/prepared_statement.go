@@ -230,9 +230,9 @@ func (ps *preparedStatement) buildQuery(params []interface{}) (string, error) {
 	}
 
 	var query strings.Builder
-	for i, part := range ps.queryParts[:len(ps.queryParts)-1] {
-		query.WriteString(part)
-		formattedParam, err := formatArg(params[i])
+	for i, param := range params {
+		query.WriteString(ps.queryParts[i])
+		formattedParam, err := formatArg(param)
 		if err != nil {
 			return "", fmt.Errorf("failed to format parameter at index %d: %v", i+1, err)
 		}

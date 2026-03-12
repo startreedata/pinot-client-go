@@ -58,9 +58,9 @@ func formatQuery(queryPattern string, params []interface{}) (string, error) {
 	parts := strings.Split(queryPattern, "?")
 
 	var newQuery strings.Builder
-	for i, part := range parts[:len(parts)-1] {
-		newQuery.WriteString(part)
-		formattedParam, err := formatArg(params[i])
+	for i, param := range params {
+		newQuery.WriteString(parts[i])
+		formattedParam, err := formatArg(param)
 		if err != nil {
 			return "", fmt.Errorf("failed to format parameter: %v", err)
 		}
