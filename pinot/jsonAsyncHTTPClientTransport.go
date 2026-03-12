@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -112,5 +113,6 @@ func createHTTPRequest(url string, jsonValue []byte, extraHeader map[string]stri
 	for k, v := range extraHeader {
 		r.Header.Add(k, v)
 	}
+	r.Header.Set("X-Correlation-Id", uuid.New().String())
 	return r, nil
 }
