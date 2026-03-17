@@ -12,6 +12,9 @@ on:
     paths-ignore:
       - "**.md"
 
+permissions:
+  contents: read
+
 jobs:
   golangci:
     runs-on: ubuntu-latest
