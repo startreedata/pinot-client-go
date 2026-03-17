@@ -1,0 +1,33 @@
+title: Pinot Client Go
+description: Official Go client library for Apache Pinot
+remote_theme: just-the-docs/just-the-docs@v0.10.0
+url: https://startreedata.github.io
+baseurl: /pinot-client-go
+
+color_scheme: light
+
+permalink: pretty
+
+exclude:
+  - Gemfile
+  - Gemfile.lock
+
+nav_order: 1
+
+aux_links:
+  "GitHub":
+    - "https://github.com/startreedata/pinot-client-go"
+  "GoDoc":
+    - "https://pkg.go.dev/github.com/startreedata/pinot-client-go"
+
+footer_content: "Copyright &copy; StarTree. Distributed under the <a href=\"https://github.com/startreedata/pinot-client-go/blob/master/LICENSE\">Apache License 2.0</a>."
+
+back_to_top: true
+back_to_top_text: "Back to top"
+
+search_enabled: true
+search:
+  heading_level: 2
+  previews: 3
+  preview_words_before: 5
+  preview_words_after: 10
