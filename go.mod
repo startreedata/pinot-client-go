@@ -4,18 +4,18 @@ require (
 	github.com/apache/arrow/go/v15 v15.0.2
 	github.com/go-zookeeper/zk v1.0.4
 	github.com/golang/snappy v1.0.0
+	github.com/google/uuid v1.6.0
 	github.com/klauspost/compress v1.18.4
 	github.com/pierrec/lz4/v4 v4.1.26
 	github.com/sirupsen/logrus v1.9.4
 	github.com/stretchr/testify v1.11.1
-	google.golang.org/grpc v1.79.2
+	google.golang.org/grpc v1.79.3
 	google.golang.org/protobuf v1.36.11
 )
 
 require (
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/google/flatbuffers v23.5.26+incompatible // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
