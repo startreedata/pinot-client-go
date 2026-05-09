@@ -1,6 +1,7 @@
 # make file to hold the logic of build and test setup
 PACKAGES := $(shell go list ./... | grep -v examples| grep -v integration-tests)
 INTEGRATION_TESTS_PACKAGES := $(shell go list ./... | grep integration-tests)
+GOLANGCI_LINT_VERSION := v2.12.2
 
 .DEFAULT_GOAL := test
 
@@ -23,13 +24,7 @@ setup: install-covertools install-deps
 lint:
 	go fmt ./...
 	go vet ./...
-	@# Use golangci-lint v2 (matches CI). If a v2 binary isn't installed, run via `go run`.
-	@set -euo pipefail; \
-	if command -v golangci-lint >/dev/null 2>&1 && golangci-lint version 2>/dev/null | grep -q 'version 2\.'; then \
-		golangci-lint run ./...; \
-	else \
-		go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.8.0 run ./...; \
-	fi
+	go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION) run ./...
 
 .PHONY: build
 build:

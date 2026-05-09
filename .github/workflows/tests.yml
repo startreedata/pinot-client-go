@@ -24,11 +24,13 @@ jobs:
 
       - uses: actions/setup-go@v6
         with:
-          go-version: "1.24"
+          go-version-file: go.mod
           cache: false
 
       - name: Linter
         uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.12.2
 
   unit-tests:
     runs-on: ubuntu-latest
@@ -39,7 +41,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: "1.24"
+          go-version-file: go.mod
 
       - name: Before Install
         run: make setup
@@ -69,7 +71,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: "1.24"
+          go-version-file: go.mod
 
       - name: Before Install
         run: make setup
