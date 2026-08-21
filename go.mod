@@ -7,7 +7,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/klauspost/compress v1.19.1
 	github.com/pierrec/lz4/v4 v4.1.27
-	github.com/sirupsen/logrus v1.9.4
+	github.com/sirupsen/logrus v1.10.0
 	github.com/stretchr/testify v1.11.1
 	google.golang.org/grpc v1.82.1
 	google.golang.org/protobuf v1.36.11
