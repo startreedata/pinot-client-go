@@ -34,6 +34,11 @@ type GrpcConfig struct {
 	ExtraMetadata map[string]string
 	// TLS config for secure gRPC connections.
 	TLSConfig *GrpcTLSConfig
+	// MaxRecvMsgSizeBytes caps the size of a single gRPC response message the
+	// client will accept. Pinot streams results as blocks whose size scales with
+	// BlockRowSize and column widths, so a block can exceed gRPC's 4MB default and
+	// fail with ResourceExhausted. Defaults to defaultGrpcMaxRecvMsgSize when <= 0.
+	MaxRecvMsgSizeBytes int
 }
 
 // GrpcTLSConfig configures TLS for gRPC connections.
