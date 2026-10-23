@@ -34,6 +34,10 @@ const (
 	defaultGrpcBlockRowSize = 10000
 	defaultGrpcCompression  = "ZSTD"
 	defaultGrpcEncoding     = "JSON"
+	// defaultGrpcMaxRecvMsgSize is the max size (128MB) of a single gRPC response
+	// message the client accepts, overriding gRPC's 4MB default which is too small
+	// for Pinot result blocks of many or wide rows.
+	defaultGrpcMaxRecvMsgSize = 128 * 1024 * 1024
 )
 
 var newZstdReader = zstd.NewReader
@@ -247,7 +251,17 @@ func buildGrpcDialOptions(config *GrpcConfig) ([]grpc.DialOption, error) {
 	}
 	return []grpc.DialOption{
 		grpc.WithTransportCredentials(creds),
+		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(resolveMaxRecvMsgSize(config))),
 	}, nil
+}
+
+// resolveMaxRecvMsgSize returns the configured max receive message size, falling
+// back to defaultGrpcMaxRecvMsgSize when the config value is unset (<= 0).
+func resolveMaxRecvMsgSize(config *GrpcConfig) int {
+	if config.MaxRecvMsgSizeBytes <= 0 {
+		return defaultGrpcMaxRecvMsgSize
+	}
+	return config.MaxRecvMsgSizeBytes
 }
 
 func parseRowSize(metadata map[string]string) (int, error) {
