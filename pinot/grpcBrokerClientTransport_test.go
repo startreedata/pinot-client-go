@@ -354,9 +354,16 @@ func TestNewGrpcBrokerClientTransportErrors(t *testing.T) {
 }
 
 func TestBuildGrpcDialOptions(t *testing.T) {
+	// Default config must configure both transport credentials and a
+	// max-recv-message-size call option (overriding gRPC's 4MB default).
 	options, err := buildGrpcDialOptions(&GrpcConfig{})
 	assert.NoError(t, err)
-	assert.NotEmpty(t, options)
+	assert.Len(t, options, 2)
+
+	// An explicit MaxRecvMsgSizeBytes is honored and still yields both options.
+	options, err = buildGrpcDialOptions(&GrpcConfig{MaxRecvMsgSizeBytes: 1024})
+	assert.NoError(t, err)
+	assert.Len(t, options, 2)
 
 	options, err = buildGrpcDialOptions(&GrpcConfig{
 		TLSConfig: &GrpcTLSConfig{
