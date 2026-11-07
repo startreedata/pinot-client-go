@@ -268,6 +268,36 @@ func TestGrpcTransportClose(t *testing.T) {
 	assert.ErrorIs(t, err, errGrpcTransportClosed)
 }
 
+// conn.Close only fails for a connection that is already closed, so close
+// the cached connections out from under the transport to reach those paths.
+func TestGrpcTransportCloseOfAlreadyClosedConnection(t *testing.T) {
+	transport, err := newGrpcBrokerClientTransport(&GrpcConfig{Encoding: "JSON", Compression: "NONE"})
+	require.NoError(t, err)
+
+	// releaseConn ignores the error when closing an evicted connection.
+	evicted, err := transport.acquireConn(t.Context(), "127.0.0.1:1")
+	require.NoError(t, err)
+	require.NoError(t, evicted.conn.Close())
+	transport.releaseConn("127.0.0.1:1", evicted, status.Error(codes.Unavailable, "down"))
+	transport.mu.Lock()
+	assert.Empty(t, transport.conns)
+	transport.mu.Unlock()
+
+	// Close reports the error but still clears the cache and marks the
+	// transport closed.
+	cached, err := transport.acquireConn(t.Context(), "127.0.0.1:2")
+	require.NoError(t, err)
+	transport.releaseConn("127.0.0.1:2", cached, nil)
+	require.NoError(t, cached.conn.Close())
+	require.Error(t, transport.Close())
+	transport.mu.Lock()
+	assert.Empty(t, transport.conns)
+	transport.mu.Unlock()
+	require.NoError(t, transport.Close(), "Close must be idempotent")
+	_, err = transport.acquireConn(t.Context(), "127.0.0.1:2")
+	assert.ErrorIs(t, err, errGrpcTransportClosed)
+}
+
 func TestGrpcTransportDialOptionErrorIsNotCached(t *testing.T) {
 	transport, err := newGrpcBrokerClientTransport(&GrpcConfig{
 		TLSConfig: &GrpcTLSConfig{Enabled: true, CACertPath: t.TempDir() + "/missing.pem"},
