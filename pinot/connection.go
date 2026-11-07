@@ -2,6 +2,7 @@ package pinot
 
 import (
 	"fmt"
+	"io"
 	"math/big"
 	"strings"
 	"time"
@@ -102,6 +103,17 @@ func escapeStringValue(s string) string {
 // OpenTrace for the connection
 func (c *Connection) OpenTrace() {
 	c.trace = true
+}
+
+// Close releases resources held by the connection's transport, such as the
+// pooled gRPC broker connections. The HTTP transport does not own the
+// http.Client it was given, so Close is a no-op for it. The connection must
+// not be used after Close.
+func (c *Connection) Close() error {
+	if closer, ok := c.transport.(io.Closer); ok {
+		return closer.Close()
+	}
+	return nil
 }
 
 // CloseTrace for the connection
