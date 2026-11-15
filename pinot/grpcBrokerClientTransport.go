@@ -9,11 +9,13 @@ import (
 	"crypto/x509"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/apache/arrow/go/v15/arrow"
@@ -24,8 +26,10 @@ import (
 	"github.com/klauspost/compress/zstd"
 	"github.com/pierrec/lz4/v4"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 
 	proto "github.com/startreedata/pinot-client-go/pinot/proto"
 )
@@ -46,8 +50,31 @@ var newZstdReader = zstd.NewReader
 var grpcDialContext = grpc.DialContext
 var maxGrpcPayloadLength = int(^uint(0) >> 1)
 
+// errGrpcTransportClosed is returned by queries issued after Close.
+var errGrpcTransportClosed = errors.New("grpc transport is closed")
+
+// grpcBrokerClientTransport executes queries over the Pinot broker gRPC API.
+//
+// It keeps one long-lived *grpc.ClientConn per broker address and multiplexes
+// concurrent queries over it as HTTP/2 streams, instead of dialing (TCP, and
+// TLS when enabled) for every query. A connection whose query fails with
+// codes.Unavailable is evicted so the next query to that broker dials fresh;
+// it is closed once its in-flight queries finish.
 type grpcBrokerClientTransport struct {
 	config *GrpcConfig
+
+	mu          sync.Mutex
+	dialOptions []grpc.DialOption
+	conns       map[string]*grpcBrokerConn
+	closed      bool
+}
+
+// grpcBrokerConn is a cached connection plus the bookkeeping needed to close it
+// safely after eviction while other queries may still be streaming on it.
+type grpcBrokerConn struct {
+	conn     *grpc.ClientConn
+	inFlight int
+	evicted  bool
 }
 
 func newGrpcBrokerClientTransport(config *GrpcConfig) (*grpcBrokerClientTransport, error) {
@@ -56,32 +83,106 @@ func newGrpcBrokerClientTransport(config *GrpcConfig) (*grpcBrokerClientTranspor
 	}
 	return &grpcBrokerClientTransport{
 		config: config,
+		conns:  map[string]*grpcBrokerConn{},
 	}, nil
+}
+
+// acquireConn returns the cached connection for address, dialing it on first
+// use. The caller must call releaseConn exactly once when the query is done.
+func (t *grpcBrokerClientTransport) acquireConn(ctx context.Context, address string) (*grpcBrokerConn, error) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if t.closed {
+		return nil, errGrpcTransportClosed
+	}
+	if cached, ok := t.conns[address]; ok {
+		cached.inFlight++
+		return cached, nil
+	}
+	if t.dialOptions == nil {
+		// Built lazily and only cached on success, so a bad TLS config keeps
+		// failing at query time (as before) without being re-read per query
+		// once it works.
+		dialOptions, err := buildGrpcDialOptions(t.config)
+		if err != nil {
+			return nil, err
+		}
+		t.dialOptions = dialOptions
+	}
+	// grpcDialContext does not block on connection establishment, so holding
+	// the lock here is cheap; the connection is set up by the first RPC and is
+	// bounded by that RPC's context.
+	//nolint:staticcheck // grpc.NewClient lacks context-based timeout semantics here.
+	conn, err := grpcDialContext(ctx, address, t.dialOptions...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to dial grpc broker %s: %w", address, err)
+	}
+	cached := &grpcBrokerConn{conn: conn, inFlight: 1}
+	t.conns[address] = cached
+	return cached, nil
+}
+
+// releaseConn marks one query on cached as finished. If the query failed with
+// codes.Unavailable the connection is evicted from the cache. An evicted
+// connection is closed once no query is using it.
+func (t *grpcBrokerClientTransport) releaseConn(address string, cached *grpcBrokerConn, queryErr error) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	cached.inFlight--
+	if queryErr != nil && status.Code(queryErr) == codes.Unavailable && !cached.evicted {
+		cached.evicted = true
+		if t.conns[address] == cached {
+			delete(t.conns, address)
+		}
+	}
+	if cached.evicted && cached.inFlight == 0 {
+		if closeErr := cached.conn.Close(); closeErr != nil {
+			_ = closeErr
+		}
+	}
+}
+
+// Close closes every cached broker connection. Queries issued after Close fail
+// with an error; queries already in flight are canceled.
+func (t *grpcBrokerClientTransport) Close() error {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if t.closed {
+		return nil
+	}
+	t.closed = true
+	var closeErr error
+	for address, cached := range t.conns {
+		cached.evicted = true
+		if err := cached.conn.Close(); err != nil && closeErr == nil {
+			closeErr = err
+		}
+		delete(t.conns, address)
+	}
+	return closeErr
 }
 
 func (t *grpcBrokerClientTransport) execute(brokerAddress string, query *Request) (*BrokerResponse, error) {
 	address := normalizeGrpcAddress(brokerAddress)
-	ctx := context.Background()
+	// Always cancel the per-query context so a stream abandoned on an early
+	// return (for example a decode error) is torn down instead of lingering on
+	// the shared connection.
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	if t.config.Timeout > 0 {
-		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, t.config.Timeout)
 		defer cancel()
 	}
-	dialOptions, err := buildGrpcDialOptions(t.config)
+	cached, err := t.acquireConn(ctx, address)
 	if err != nil {
 		return nil, err
 	}
-	//nolint:staticcheck // grpc.NewClient lacks context-based timeout semantics here.
-	conn, err := grpcDialContext(ctx, address, dialOptions...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to dial grpc broker %s: %w", address, err)
-	}
-	defer func() {
-		if closeErr := conn.Close(); closeErr != nil {
-			_ = closeErr
-		}
-	}()
+	response, err := t.executeOnConn(ctx, cached.conn, query)
+	t.releaseConn(address, cached, err)
+	return response, err
+}
 
+func (t *grpcBrokerClientTransport) executeOnConn(ctx context.Context, conn *grpc.ClientConn, query *Request) (*BrokerResponse, error) {
 	client := proto.NewPinotQueryBrokerClient(conn)
 	request := &proto.BrokerRequest{
 		Sql:      query.query,

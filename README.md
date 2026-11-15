@@ -169,6 +169,8 @@ pinotClient, err := pinot.NewWithConfig(&pinot.ClientConfig{
 })
 ```
 
+The gRPC transport keeps one connection per broker and reuses it across queries. Call `pinotClient.Close()` when you are done to release those connections.
+
 ## Query Pinot
 
 Please see this [example](https://github.com/startreedata/pinot-client-go/blob/master/examples/batch-quickstart/main.go) for your reference.

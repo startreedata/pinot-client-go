@@ -92,6 +92,22 @@ GrpcConfig: &pinot.GrpcConfig{
 }
 ```
 
+## Connection Reuse
+
+The client keeps one gRPC connection per broker and runs concurrent queries over it as HTTP/2 streams, so the TCP and TLS handshakes happen once per broker instead of once per query. If a query fails with `Unavailable` (for example the broker restarted), that connection is dropped and the next query to the broker dials a new one.
+
+Call `Close` on the connection when you are done with it to release the cached broker connections:
+
+```go
+pinotClient, err := pinot.NewWithConfig(cfg)
+if err != nil {
+    log.Fatal(err)
+}
+defer pinotClient.Close()
+```
+
+`Close` is a no-op for the HTTP transport.
+
 ## Usage
 
 Once configured with gRPC, query execution is identical to HTTP:
