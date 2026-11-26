@@ -1,7 +1,9 @@
 package pinot
 
 import (
+	"context"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -186,20 +188,32 @@ func TestPinotClients(t *testing.T) {
 }
 
 func TestPinotWithHttpTimeout(t *testing.T) {
+	requestReceived := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, err := io.Copy(io.Discard, r.Body); err != nil {
+			http.Error(w, "could not read query", http.StatusBadRequest)
+			return
+		}
+		close(requestReceived)
+		select {
+		case <-r.Context().Done():
+		case <-time.After(5 * time.Second):
+			http.Error(w, "client did not time out", http.StatusGatewayTimeout)
+		}
+	}))
+	defer server.Close()
+
 	pinotClient, err := NewWithConfig(&ClientConfig{
-		// Hit an unreachable port
-		BrokerList: []string{"www.google.com:81"},
-		// Set timeout to 1 sec
+		BrokerList:  []string{server.URL},
 		HTTPTimeout: 1 * time.Second,
 	})
-	assert.Nil(t, err)
-	start := time.Now()
+	require.NoError(t, err)
+
 	_, err = pinotClient.ExecuteSQL("testTable", "select * from testTable")
-	end := time.Since(start)
-	assert.NotNil(t, err)
-	diff := int(end.Seconds())
-	// Query should ideally timeout in 1 sec, considering other variables,
-	// diff might not be exactly equal to 1. So, we can assert that diff
-	// must be less than 2 sec.
-	assert.Less(t, diff, 2)
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+	select {
+	case <-requestReceived:
+	default:
+		t.Fatal("the broker did not receive the request")
+	}
 }
