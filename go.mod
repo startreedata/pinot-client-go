@@ -6,7 +6,7 @@ require (
 	github.com/golang/snappy v1.0.0
 	github.com/google/uuid v1.6.0
 	github.com/klauspost/compress v1.20.5
-	github.com/pierrec/lz4/v4 v4.1.33
+	github.com/pierrec/lz4/v4 v4.1.34
 	github.com/sirupsen/logrus v1.10.2
 	github.com/stretchr/testify v1.12.1
 	google.golang.org/grpc v1.85.0
